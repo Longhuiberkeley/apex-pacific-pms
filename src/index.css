@@ -1,0 +1,101 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --color-paper: #F6F3EC;
+  --color-surface: #FFFDF8;
+  --color-ink: #1B2430;
+  --color-muted: #5C6570;
+  --color-line: #E6E1D8;
+  --color-rail: #1B2430;
+  --color-pass: #1F7A4D;
+  --color-wait: #B5811A;
+  --color-stop: #B42318;
+  --color-ai: #2152C7;
+
+  /* light-on-ink variants — semantic colors for text inside the dark shell inset */
+  --color-pass-lt: #6FC496;
+  --color-wait-lt: #E8C98A;
+  --color-stop-lt: #F0A9A0;
+  --color-ai-lt: #8FB0F5;
+
+  /* aliases so leftover panes still resolve on paper */
+  --color-panel: #FFFDF8;
+  --color-panel2: #F6F3EC;
+  --color-deep: #1B2430;
+  --color-line2: #C9C3B8;
+
+  --shadow-card: 0 1px 0 0 rgb(27 36 48 / 0.04);
+  --shadow-pop: 0 18px 48px -24px rgb(27 36 48 / 0.28);
+
+  --animate-fade: fade 0.18s ease-out;
+  --animate-sheet: sheet 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-pop: pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheet { from { opacity: 0.4; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: none; } }
+
+@layer base {
+  html, body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: rgb(33 82 199 / 0.18); }
+
+  :focus-visible {
+    outline: 2px solid #2152C7;
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+  input:focus-visible, textarea:focus-visible { outline: none; }
+}
+
+.font-mono2 { font-family: var(--font-mono); }
+
+/* light scrollbars — paper desk */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: #D9D3C8; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #C9C3B8; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* LP DDQ §7 print export — light app must not print white-on-white,
+   and a long sheet must paginate instead of clipping inside the overlay */
+@media print {
+  html, body { background: #fff !important; color: #1B2430 !important; }
+  body * { visibility: hidden; overflow: visible !important; max-height: none !important; }
+  #ddq-sheet, #ddq-sheet * { visibility: visible; }
+  #ddq-sheet {
+    position: absolute !important;
+    top: 0 !important; left: 0 !important;
+    width: 100% !important; max-width: none !important;
+    background: #fff !important;
+    color: #1B2430 !important;
+    font-family: var(--font-sans);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #ddq-sheet * {
+    color: #1B2430 !important;
+    background: transparent !important;
+    border-color: #E6E1D8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #ddq-sheet .print-mono { font-family: var(--font-mono); }
+}

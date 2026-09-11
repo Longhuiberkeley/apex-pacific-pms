@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist_backup_pre_rework/
+src_backup_pre_rework/
+tsconfig.tsbuildinfo
+*.local
+.DS_Store
