@@ -7,6 +7,8 @@ import type { EntityHistory, FundTab } from '../lib/types';
 import { Badge, Btn, Input, RTabs, Sheet } from './Ui';
 import DocReview from './DocReview';
 import { cn } from '../lib/cn';
+import { WorkCard } from './Team';
+import { silkNextAction } from '../lib/work';
 
 function compactUsd(n: number) {
   const sign = n < 0 ? '-' : '';
@@ -49,6 +51,7 @@ function actorTone(a: EntityHistory['actor']): 'emerald' | 'blue' | 'slate' {
 
 const TABS: Array<{ id: FundTab; label: string }> = [
   { id: 'overview', label: 'Overview' },
+  { id: 'work', label: 'Research & work' },
   { id: 'exposure', label: 'Exposure' },
   { id: 'documents', label: 'Documents' },
   { id: 'history', label: 'History' },
@@ -57,6 +60,8 @@ const TABS: Array<{ id: FundTab; label: string }> = [
 
 export default function FundPage() {
   const fundId = useStore((s) => s.fundId);
+  const assignments = useStore((s) => s.assignments);
+  const openAssignment = useStore((s) => s.openAssignment);
   const fundTab = useStore((s) => s.fundTab);
   const setFundTab = useStore((s) => s.setFundTab);
   const setView = useStore((s) => s.setView);
@@ -70,8 +75,6 @@ export default function FundPage() {
   const ddVerdicts = useStore((s) => s.ddVerdicts);
   const verdictLog = useStore((s) => s.verdictLog);
   const trigAssessed = useStore((s) => s.trigAssessed);
-  const silkRequested = useStore((s) => s.silkRequested);
-  const requestSilkPack = useStore((s) => s.requestSilkPack);
   const escalateSable = useStore((s) => s.escalateSable);
   const escalated = useStore((s) => s.escalated);
   const ackHalcyon = useStore((s) => s.ackHalcyon);
@@ -89,6 +92,7 @@ export default function FundPage() {
   const [docSel, setDocSel] = useState<string | null>(null);
 
   const fund = funds.find((f) => f.id === fundId);
+  const silkNext = silkNextAction(assignments);
   const pipe = screener.find((c) => c.id === fundId);
   const inBook = !!fund;
   const name = fund?.name ?? pipe?.name ?? fundId ?? 'Fund';
@@ -155,7 +159,7 @@ export default function FundPage() {
         inBook: false,
         lifecycle: {
           intake: 'done',
-          pack: silkRequested && pipe!.id === SILK ? 'requested' : '2/6',
+          documents: pipe!.id === SILK ? silkNext.status : 'Not yet reviewed',
           firstNav: 'none',
           scoreable: 'none',
         },
@@ -166,6 +170,7 @@ export default function FundPage() {
   const ruleE = fund ? viol.some((v) => v.rule === 'E' && v.msg.includes(fund.name)) : false;
 
   const openItems: Array<{ key: string; title: string; meta: string; go: () => void }> = [];
+  assignments.filter((a) => a.fundId === fundId && a.status !== 'Done').forEach((a) => openItems.push({ key: a.id, title: a.title, meta: `${a.owner} · ${a.status}`, go: () => openAssignment(a.id) }));
   fundDocs.filter((d) => d.status === 'pending').forEach((d) => {
     openItems.push({
       key: d.id,
@@ -238,11 +243,6 @@ export default function FundPage() {
                 {halAck ? 'Acknowledged' : 'Acknowledge'}
               </Btn>
             )}
-            {fundId === SILK && (
-              silkRequested
-                ? <Badge tone="emerald">Pack requested</Badge>
-                : <Btn size="sm" tone="blue" onClick={requestSilkPack}>Request pack</Btn>
-            )}
           </div>
         </div>
         {editing && inBook && (
@@ -263,6 +263,13 @@ export default function FundPage() {
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
         <RTabs.Root value={fundTab} onValueChange={(v) => setFundTab(v as FundTab)}>
           <RTabs.Content value="overview" className="space-y-4 pt-0">
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-surface p-3 text-[12px]">
+              {['Screening', 'Diligence', 'IC review', 'Onboarding', 'Invested', 'Monitoring'].map((stage, i) => {
+                const current = inBook ? 5 : pipe?.status === 'IN DD' ? 1 : 0;
+                return <span key={stage} className="inline-flex items-center gap-2">{i > 0 && <span className="text-line2">→</span>}<span className={cn('rounded px-2 py-1', i === current ? 'bg-rail font-medium text-white' : 'text-muted')}>{stage}</span></span>;
+              })}
+              <button onClick={() => setFundTab('work')} className="ml-auto text-ai hover:underline">Research, decisions & owners ↗</button>
+            </div>
             {inBook && fund && (
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 <Fact label="$ exposure">
@@ -285,23 +292,15 @@ export default function FundPage() {
             )}
             {!inBook && pipe && (
               <div className="rounded-lg border border-line bg-surface p-4">
-                <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
-                  <span className="rounded bg-pass/10 px-1.5 py-0.5 text-pass">intake done</span>
-                  <span className="text-muted">—</span>
-                  <span className={cn('rounded px-1.5 py-0.5', silkRequested && pipe.id === SILK ? 'bg-wait/10 text-wait' : 'bg-paper text-muted')}>
-                    pack {silkRequested && pipe.id === SILK ? 'requested' : '2/6'}
-                  </span>
-                  <span className="text-muted">—</span>
-                  <span className="rounded bg-paper px-1.5 py-0.5 text-muted">first NAV none</span>
-                  <span className="text-muted">—</span>
-                  <span className="rounded bg-paper px-1.5 py-0.5 text-muted">scoreable none</span>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Badge tone="blue">{pipe.tag}</Badge>
-                  {pipe.id === SILK && !silkRequested && (
-                    <Btn size="sm" tone="blue" onClick={requestSilkPack}>Request pack</Btn>
-                  )}
-                </div>
+                <Badge tone="blue">{pipe.tag}</Badge>
+                {pipe.id === SILK ? (
+                  <div className="mt-3">
+                    <h3 className="text-[15px] font-semibold">Next step · {silkNext.status}</h3>
+                    <p className="mt-1 text-[12px] text-muted">Owner: {silkNext.owner}</p>
+                    <p className="mt-2 max-w-[720px] text-[13px] leading-relaxed text-muted">{silkNext.detail}</p>
+                    <Btn className="mt-3" tone="blue" onClick={() => openAssignment(silkNext.id)}>{silkNext.label}</Btn>
+                  </div>
+                ) : <p className="mt-3 text-[13px] text-muted">Prospective fund. Research and documents remain to be reviewed before an investment decision.</p>}
               </div>
             )}
 
@@ -364,7 +363,13 @@ export default function FundPage() {
             </section>
           </RTabs.Content>
 
-          <RTabs.Content value="exposure" className="space-y-3 pt-0">
+           <RTabs.Content value="work" className="space-y-4 pt-0">
+             <div><h2 className="text-[17px] font-semibold">Research, decisions & work</h2><p className="mt-1 text-[13px] text-muted">The same assignments shown in Team — linked to this manager throughout its lifecycle.</p></div>
+             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{assignments.filter((a) => a.fundId === fundId).map((a) => <WorkCard key={a.id} assignment={a} />)}</div>
+             {!assignments.some((a) => a.fundId === fundId) && <p className="text-[13px] text-muted">No team assignments for this manager yet.</p>}
+           </RTabs.Content>
+
+           <RTabs.Content value="exposure" className="space-y-3 pt-0">
             {!inBook || !fund ? (
               <p className="text-[13px] text-muted">This name is not in the book.</p>
             ) : (

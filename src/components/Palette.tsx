@@ -39,6 +39,7 @@ export default function Palette() {
 
         <Command.Group heading="Go">
           <Item onSelect={nav(() => setView('today'))}>Today</Item>
+          <Item onSelect={nav(() => setView('team'))}>Team workspace · assignments & reviews</Item>
           <Item onSelect={nav(() => setView('book'))}>Book</Item>
           <Item onSelect={nav(() => setAudit(true))}>Audit</Item>
           <Item onSelect={nav(() => setModules(true))}>Modules</Item>

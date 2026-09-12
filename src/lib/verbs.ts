@@ -1,7 +1,7 @@
 // The command surface — every lever in the UI is a verb here.
 // Same rails for humans (via form) and agents (via shell); gated verbs refuse agents.
 
-export type Via = 'form' | 'shell' | 'engine';
+export type Via = 'form' | 'shell' | 'engine' | 'cli';
 
 export interface Verb {
   cmd: string;
@@ -10,12 +10,21 @@ export interface Verb {
 }
 
 export const FENCE =
-  'fence: agents may add intake, extract, and stage proposals. never triage / weights / packs / verdicts / approvals.';
+  'agents: read records · submit research · stage proposals | humans: review · approve';
 
 export const VERBS: Verb[] = [
   { cmd: 'help', desc: 'this list' },
   { cmd: 'whoami', desc: 'who the shell is acting as' },
   { cmd: 'history', desc: 'every verb run this session — forms included' },
+  { cmd: 'tasks list', desc: 'team assignments, owners and status' },
+  { cmd: 'tasks get <ID>', desc: 'assignment brief, evidence and submissions' },
+  { cmd: 'tasks submit A-101 --example', desc: 'submit the prepared research example to human review' },
+  { cmd: 'tasks review <ID>', desc: 'accept or request changes', gate: 'HUMAN ONLY' },
+  { cmd: 'funds list', desc: 'portfolio and pipeline records' },
+  { cmd: 'funds get <ID>', desc: 'fund with documents, assignments and history' },
+  { cmd: 'docs list', desc: 'structured document records' },
+  { cmd: 'docs get <ID>', desc: 'extracted fields and review status' },
+  { cmd: 'book get', desc: 'committed book, proposal and rule results' },
   { cmd: 'screen list', desc: 'dump the watchlist' },
   { cmd: 'screen extract --now', desc: 'semantic extract (Type 1 · cited · deduped)' },
   { cmd: 'screen add "<name>"', desc: 'intake a name — no score invented' },
@@ -27,7 +36,6 @@ export const VERBS: Verb[] = [
   { cmd: 'ops reconcile monday.xls', desc: 'ledger vs statement — math is code' },
   { cmd: 'ops ack HAL.restatement', desc: 'acknowledge the Halcyon fee recompute' },
   { cmd: 'dd verdict <FUND>', desc: 'record a diligence verdict', gate: 'HUMAN ONLY' },
-  { cmd: 'dd request-pack SILK', desc: 'chase the onboarding pack' },
   { cmd: 'audit tail <n>', desc: 'read the trail (checksum-chained)' },
   { cmd: 'agent demo', desc: 'the raw agent vs the rails, twice' },
 ];

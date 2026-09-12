@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, FileText, Mail } from 'lucide-react';
 import type { DocRecord } from '../lib/types';
-import { domainOf, firstWeakRequired, fromName } from '../lib/docs';
+import { domainOf, firstWeakRequired, fromName, documentErrors } from '../lib/docs';
 import { cn } from '../lib/cn';
 import DocOriginal from './DocOriginal';
 import HitlTriad from './HitlTriad';
+import { ModeBadge } from './WorkMode';
 
 export default function DocReview({
   doc,
@@ -47,6 +48,7 @@ export default function DocReview({
   };
 
   const domain = domainOf(doc.from);
+  const errors = documentErrors(doc);
   const Icon = doc.kind === 'email' ? Mail : FileText;
 
   return (
@@ -58,13 +60,14 @@ export default function DocReview({
               <Icon size={14} className="shrink-0 text-muted" />
               <h2 className="text-[15px] font-semibold text-ink">{doc.title}</h2>
             </div>
+            <div className="mt-2"><ModeBadge mode="type1" /></div>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
               <span>{fromName(doc.from)}</span>
               {domain && (
                 <>
                   <span className="text-line2">·</span>
                   <span>
-                    {domain} <span className="text-pass">verified</span>
+                    {domain}
                   </span>
                 </>
               )}
@@ -85,11 +88,12 @@ export default function DocReview({
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <div className="w-[55%] overflow-auto border-r border-line bg-paper p-4">
+        <div className="w-[48%] overflow-auto border-r border-line bg-paper p-4 2xl:w-[55%]">
           <DocOriginal doc={doc} activeKey={active} onActivate={setActive} />
         </div>
-        <div className="flex w-[45%] min-w-0 flex-col overflow-auto">
-          <table className="w-full border-collapse text-[13px]">
+        <div className="flex w-[52%] min-w-0 flex-col overflow-auto 2xl:w-[45%]">
+          <table className="w-full table-fixed border-collapse text-[13px]">
+            <colgroup><col className="w-[27%]" /><col className="w-[53%]" /><col className="w-[20%]" /></colgroup>
             <thead>
               <tr className="text-left text-[12px] text-muted">
                 <th className="h-10 bg-paper px-3 font-medium">Field</th>
@@ -122,7 +126,8 @@ export default function DocReview({
                     <td className="h-10 px-2 align-middle">
                       <input
                         data-field-input={f.key}
-                        value={String(f.value)}
+                         value={String(f.value)}
+                         readOnly={f.key === 'fee_delta_usd'}
                         onChange={(e) => onEdit(f.key, e.target.value)}
                         onFocus={() => setActive(f.key)}
                         className="h-7 w-full rounded border border-transparent bg-transparent px-1 font-mono text-[12px] tabular-nums text-ink hover:border-line focus:border-ai focus:outline-none"
@@ -139,7 +144,7 @@ export default function DocReview({
                             human ? 'bg-ink' : f.conf >= 0.85 ? 'bg-ai' : f.conf >= 0.7 ? 'bg-wait' : 'bg-stop'
                           )}
                         />
-                        {human ? 'human' : f.conf.toFixed(2)}
+                        {f.key === 'fee_delta_usd' ? 'code' : human ? 'human' : f.conf.toFixed(2)}
                       </span>
                     </td>
                   </tr>
@@ -162,6 +167,7 @@ export default function DocReview({
         </div>
       </div>
 
+      {errors.length > 0 && <p role="alert" className="border-t border-line px-4 py-2 text-[12px] text-stop">{errors.join(' ')}</p>}
       <HitlTriad
         hotkeys
         wantReject={wantReject}

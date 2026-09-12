@@ -13,7 +13,7 @@ export default function StatusBar() {
   const setView = useStore((s) => s.setView);
   const openFund = useStore((s) => s.openFund);
 
-  const live = staged ?? book;
+  const live = book;
   const ytd = weightedYtd(live, funds, CASH_YTD);
   const cashPct = live.CASH ?? 0;
   const cashUsd = (cashPct / 100) * NAV_USD;

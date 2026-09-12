@@ -62,6 +62,9 @@ export default function Today() {
   const setView = useStore((s) => s.setView);
   const openFund = useStore((s) => s.openFund);
   const funds = useStore((s) => s.funds);
+  const assignments = useStore((s) => s.assignments);
+  const openAssignment = useStore((s) => s.openAssignment);
+  const teamFollowUps = assignments.filter((a) => a.status === 'Needs review' || (a.parentId && a.status !== 'Done'));
   const fundLabel = (id: string) => funds.find((f) => f.id === id)?.name.split(' ').slice(0, 2).join(' ') ?? id;
 
   const [filter, setFilter] = useState<Filter>('all');
@@ -114,7 +117,7 @@ export default function Today() {
 
   return (
     <div className="flex h-full min-h-0">
-      <div className="flex w-[380px] shrink-0 flex-col border-r border-line bg-surface">
+      <div className="flex w-[300px] shrink-0 flex-col border-r border-line bg-surface 2xl:w-[350px]">
         <div className="shrink-0 border-b border-line px-3 py-2.5">
           <div className="mb-2 flex items-center justify-between">
             <h1 className="text-[15px] font-semibold text-ink">Today</h1>
@@ -139,7 +142,19 @@ export default function Today() {
             ))}
           </div>
         </div>
+        <button onClick={() => setView('team')} className="border-b border-line bg-ai/5 px-3 py-3 text-left text-[12px] text-ai hover:bg-ai/10"><span className="block font-medium">Team assignments & research ↗</span><span className="mt-1 block">{assignments.filter((a) => a.status === 'Needs review').length} submissions awaiting human review</span></button>
         <div className="min-h-0 flex-1 overflow-y-auto">
+          {filter !== 'docs' && teamFollowUps.length > 0 && (
+            <section className="border-b border-line bg-ai/[0.03]">
+              <h2 className="px-3 pt-3 text-[12px] font-medium text-muted">Team reviews & follow-ups</h2>
+              {teamFollowUps.map((a) => (
+                <button key={a.id} onClick={() => openAssignment(a.id)} className="block w-full px-3 py-2.5 text-left hover:bg-paper">
+                  <span className="block text-[13px] font-medium text-ink">{a.title} ↗</span>
+                  <span className="mt-1 block text-[12px] text-muted">{a.owner} · {a.status} · {a.id}</span>
+                </button>
+              ))}
+            </section>
+          )}
           {rows.map((r) => {
             const on = sel ? rowKey(sel) === rowKey(r) : false;
             if (r.kind === 'gate') {
@@ -388,11 +403,12 @@ export default function Today() {
                   ...(taskNote.trim() ? ['note'] : []),
                 ];
                 approveQueue(qIndex, {
+                  draft: taskDraft,
                   note: taskNote.trim() || undefined,
                   fieldsEdited: edited.length ? edited : undefined,
                 });
               }}
-              onApprove={() => qIndex >= 0 && approveQueue(qIndex)}
+              onApprove={() => qIndex >= 0 && approveQueue(qIndex, { draft: taskDraft, note: taskNote })}
               onReject={(reason, note) => {
                 if (qIndex >= 0) rejectQueue(qIndex, reason, note);
               }}

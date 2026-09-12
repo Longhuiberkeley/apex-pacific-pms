@@ -7,6 +7,7 @@ import { NAV_USD } from '../data/seed';
 import type { Fund } from '../lib/types';
 import { Badge, Bar, Btn, Card } from './Ui';
 import { cn } from '../lib/cn';
+import { ModeBadge } from './WorkMode';
 
 const RULE_LABEL: Record<string, string> = {
   A: 'Rule A — single name ≤ $35.6M (25%)',
@@ -117,7 +118,7 @@ export default function Portfolio() {
       }),
       columnHelper.display({
         id: 'usd',
-        header: '$ committed',
+        header: staged ? '$ proposed' : '$ committed',
         cell: ({ row }) => {
           const f = row.original;
           const w = live[f.id] ?? 0;
@@ -169,10 +170,10 @@ export default function Portfolio() {
 
   return (
     <div className="space-y-3">
-      <h1 className="mb-3 text-[20px] font-semibold text-ink">Book</h1>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h1 className="text-[20px] font-semibold text-ink">Book</h1><ModeBadge mode="deterministic" /></div>
 
       <Card
-        title="Committed dollars"
+        title={staged ? 'Proposed dollars — awaiting PM signature' : 'Committed dollars'}
         sub={`NAV ${compactUsd(NAV_USD)} · YTD +${ytd.toFixed(2)}pp · Σ ${total.toFixed(1)}%`}
         right={
           staged ? <Badge tone="amber">Staged — IC gate open</Badge> : <Badge tone="emerald">Committed</Badge>
@@ -252,7 +253,7 @@ export default function Portfolio() {
               <Btn tone="emerald" onClick={stageProposal}>Stage proposal</Btn>
             ) : (
               <>
-                <Btn tone="emerald" onClick={approveGate} disabled={viol.length > 0}>Approve — IC {identity?.role !== 'PM' ? '(PM only)' : ''}</Btn>
+                <Btn tone="emerald" onClick={approveGate} disabled={viol.length > 0 || identity?.role !== 'PM'}>Approve — IC {identity?.role !== 'PM' ? '(PM only)' : ''}</Btn>
                 <Btn onClick={clearStage}>Discard</Btn>
               </>
             )}

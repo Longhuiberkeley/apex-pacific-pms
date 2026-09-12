@@ -43,7 +43,7 @@ export default function HitlTriad({
       if (typing || open) return;
       // hotkeys belong to the visible review surface — not to a doc hidden under a sheet
       const s = useStore.getState();
-      if (s.auditOpen || s.ddqOpen || s.paletteOpen || s.shellOpen || s.modulesOpen || s.policyOpen) return;
+      if (s.auditOpen || s.ddqOpen || s.paletteOpen || s.shellOpen || s.modulesOpen || s.policyOpen || s.assignmentId) return;
       if (e.key === 'a' || e.key === 'A') {
         e.preventDefault();
         onApprove();

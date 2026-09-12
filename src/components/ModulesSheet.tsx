@@ -1,6 +1,7 @@
 import { useStore } from '../lib/store';
 import { DD_CHECKS } from '../lib/dd';
 import { Badge, Sheet } from './Ui';
+import WorkModes from './WorkMode';
 
 function Status({ live }: { live: boolean }) {
   return live
@@ -23,6 +24,7 @@ export default function ModulesSheet() {
   return (
     <Sheet open={open} onClose={() => setModules(false)} title="Modules" width="w-[480px]">
       <div className="divide-y divide-line">
+        <div className="p-4"><h3 className="mb-3 text-[15px] font-semibold">One platform, three ways to work</h3><WorkModes /><p className="mt-3 text-[12px] leading-relaxed text-muted">Team assignments accept agent submissions through the portal or local CLI. Records and rules are shared with the human interface.</p></div>
         <div className="flex items-start gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             <div className="text-[13px] font-medium text-ink">Book and Rules A–E</div>
@@ -92,21 +94,21 @@ export default function ModulesSheet() {
         <div className="px-4 py-3">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-medium text-ink">Fee engine</div>
-              <div className="mt-0.5 text-[12px] text-muted">Not built.</div>
+              <div className="text-[13px] font-medium text-ink">Fee comparison</div>
+              <div className="mt-0.5 text-[12px] text-muted">Same-period rate comparison in code. Full accrual engine is a future module.</div>
             </div>
-            <Status live={false} />
+            <Status live />
           </div>
           {hal && (
             <div className="mt-2 rounded border border-line bg-paper p-2.5">
               <div className="text-[12px] text-ink">{hal.name}</div>
               <div className="mt-1 flex items-baseline justify-between gap-3 font-mono text-[12px] tabular-nums">
                 <span className="text-muted">fee_delta_usd</span>
-                <span className="text-ink">{feeDelta ? String(feeDelta.value) : '-27360'}</span>
+                <span className="text-ink">{feeDelta ? String(feeDelta.value) : '—'}</span>
               </div>
             </div>
           )}
-          <pre className="mt-2 rounded border border-dashed border-line bg-paper px-3 py-2 font-mono text-[12px] text-muted">function computeFee(nav, bps)</pre>
+          <pre className="mt-2 whitespace-pre-wrap rounded border border-dashed border-line bg-paper px-3 py-2 font-mono text-[12px] text-muted">NAV × (expected % − charged %) / 100</pre>
         </div>
 
         <div className="px-4 py-3">

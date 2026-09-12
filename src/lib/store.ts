@@ -7,6 +7,9 @@ import { validateBook } from './rules';
 import { ddState, openFlags } from './dd';
 import type { Via } from './verbs';
 import { FENCE } from './verbs';
+import { documentErrors } from './docs';
+import { feeAdjustment } from './fees';
+import { ASSIGNMENTS_SEED, SILK_DRAFT, validateSubmission, type Assignment, type Submission, type WorkResult } from './work';
 
 let widN = 7;
 let ridN = 2;
@@ -36,7 +39,7 @@ const entryHash = (prev: string, t: string, actor: string, action: string, detai
 const seedAuditRows: Array<[string, AuditEntry['actor'], string, string, string | undefined]> = [
   ['09:41:02', 'ENGINE', 'system boot — rules engine loaded (5 invariants, incl. cross-lane Rule E)', 'same input, same output', undefined],
   ['09:41:03', 'ENGINE', 'Rule E FAILING at boot — Sable Creek NAV 38d stale at 11.0% > 5.0% cap', 'cross-lane rule already biting', 'SAB'],
-  ['09:41:04', 'ENGINE', 'Halcyon fee recompute −$27,360 filed — July NAV restated −0.8pp', 'a model read the note; the arithmetic was rails', 'HAL'],
+  ['09:41:04', 'ENGINE', 'Halcyon fee comparison −$5,130 prepared', '$17.1M × (0.12% − 0.15%) · same-period comparison; restatement assessed separately', 'HAL'],
 ];
 const seedAudit: AuditEntry[] = seedAuditRows.reduce<AuditEntry[]>((acc, [t, actor, action, detail, tag]) => {
   const prev = acc.length ? acc[acc.length - 1].h : 'genesis';
@@ -53,7 +56,7 @@ const seedHistoryRows: Array<[string, EntityHistory['actor'], string, string, st
   ['09-05 11:12', 'ENGINE', 'HAL', 'pack', 'CLOSED', 'EXCEPTION', 'July restatement -0.8pp'],
   ['09-05 16:40', 'YOU', 'KES', 'verdict.state', '', 'CURRENT', 'V-0001 L. Wu'],
   ['09:41:03', 'ENGINE', 'SAB', 'rule.E', '', 'FAIL', 'NAV 38d stale 11.0% > 5.0%'],
-  ['09:41:04', 'ENGINE', 'HAL', 'fee.accrual', '0', '-27360', 'navpack.v1'],
+  ['09:41:04', 'ENGINE', 'HAL', 'fee.adjustment.proposed', '0', '-5130', 'navpack.v1'],
 ];
 const seedHistory: EntityHistory[] = seedHistoryRows.reduce<EntityHistory[]>((acc, [t, actor, entityId, field, from, to, source]) => {
   const prev = acc.length ? acc[acc.length - 1].h : 'genesis';
@@ -82,6 +85,14 @@ export const SILK = 'SIL';
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
 
 interface State {
+  assignments: Assignment[];
+  assignmentId: string | null;
+  openAssignment: (id: string | null) => void;
+  prepareResearch: (id: string) => void;
+  saveResearch: (id: string, draft: Submission) => void;
+  submitResearch: (id: string, content: unknown, via: 'form' | 'shell' | 'cli') => WorkResult;
+  reviewResearch: (id: string, decision: 'accepted' | 'changes requested', note: string) => WorkResult;
+  updateWork: (id: string, status: 'In progress' | 'Waiting externally' | 'Done', note: string) => WorkResult;
   identity: Identity | null;
   tab: 'screen' | 'dd' | 'construct' | 'ops';
   view: AppView;
@@ -119,7 +130,6 @@ interface State {
   policyOpen: boolean;
   ddSel: string;
   ddVerdicts: Record<string, VerdictRecord>;
-  silkRequested: boolean;
   extractRuns: number;
   shellLines: string[];
   entityAudit: { id: string; label: string } | null;
@@ -139,7 +149,7 @@ interface State {
   setDollars: (id: string, usd: number) => void;
   pasteAgentProposal: (via: Via) => void;
   pushAudit: (actor: AuditEntry['actor'], action: string, detail?: string, tag?: string, hist?: { field: string; from: string; to: string; source?: string }) => void;
-  approveQueue: (i: number, opts?: { note?: string; fieldsEdited?: string[] }) => void;
+  approveQueue: (i: number, opts?: { note?: string; draft?: string; fieldsEdited?: string[] }) => void;
   rejectQueue: (i: number, reason: string, note?: string) => void;
   approveDoc: (id: string) => void;
   rejectDoc: (id: string, reason: string, note?: string) => void;
@@ -159,7 +169,6 @@ interface State {
   openPack: (id: string | null) => void;
   setDdSel: (id: string) => void;
   fileVerdict: (fundId: string, note: string) => void;
-  requestSilkPack: () => void;
   setAudit: (b: boolean) => void;
   setShell: (b: boolean) => void;
   setDdq: (b: boolean) => void;
@@ -173,6 +182,72 @@ interface State {
 }
 
 export const useStore = create<State>((set, get) => ({
+  assignments: structuredClone(ASSIGNMENTS_SEED),
+  assignmentId: null,
+  updateWork: (id, status, note) => {
+    const a = get().assignments.find((x) => x.id === id);
+    const who = get().identity;
+    if (!a || !who || a.mode !== 'deterministic' || a.destination || a.status === 'Done') return { ok: false, message: 'Use the dedicated workflow for this assignment.' };
+    if (!note.trim()) return { ok: false, message: 'Record what happened before updating the task.' };
+    set((s) => ({ assignments: s.assignments.map((x) => x.id === id ? { ...x, status, blocker: status === 'Waiting externally' ? note.trim() : undefined, activity: [...(x.activity ?? []), { at: now(), by: who.name, note: note.trim(), status }] } : x) }));
+    get().pushAudit('YOU', `${id} → ${status} by ${who.name}`, note.trim(), a.fundId);
+    get().emitCmd(`tasks update ${id} --status="${status}"`, 'form');
+    return { ok: true, message: 'Activity saved. Fund documents and investment decisions remain separate records.' };
+  },
+  openAssignment: (assignmentId) => set({ assignmentId }),
+  prepareResearch: (id) => {
+    const a = get().assignments.find((a) => a.id === id);
+    if (!a || a.mode !== 'type2' || a.status === 'Done' || a.status === 'Needs review') return;
+    const draft = id === 'A-101' ? structuredClone(SILK_DRAFT) : a.draft;
+    if (!draft) return;
+    set((s) => ({ assignments: s.assignments.map((a) => a.id === id ? { ...a, draft, status: 'In progress' } : a) }));
+    get().pushAudit('AGENT', `prepared research draft for ${id}`, 'Prepared demo response · sources attached · awaiting submission', a.fundId);
+    get().emitCmd(`tasks draft ${id} --example`, 'form');
+  },
+  saveResearch: (id, draft) => set((s) => ({ assignments: s.assignments.map((a) => a.id === id && a.status !== 'Done' && a.status !== 'Needs review' ? { ...a, draft } : a) })),
+  submitResearch: (id, content, via) => {
+    const a = get().assignments.find((a) => a.id === id);
+    if (!get().identity) return { ok: false, message: 'Sign in to the demo first.' };
+    if (!a) return { ok: false, message: `Assignment ${id} not found.` };
+    if (a.mode !== 'type2') return { ok: false, message: 'This assignment uses its dedicated document or deterministic workflow.' };
+    if (a.status !== 'Assigned' && a.status !== 'In progress') return { ok: false, message: 'This assignment is not accepting a submission. A reviewer must request changes before resubmission.' };
+    const checked = validateSubmission(content, a);
+    if (!checked.ok) return checked;
+    const by = via === 'form' ? get().identity!.name : `External agent (${via})`;
+    const revision = { version: a.revisions.length + 1, content: checked.content, by, via, at: now() };
+    set((s) => ({ assignments: s.assignments.map((x) => x.id === id ? { ...x, draft: checked.content, status: 'Needs review', revisions: [...x.revisions, revision] } : x) }));
+    get().pushAudit(via === 'form' ? 'YOU' : 'AGENT', `submitted ${id} v${revision.version} by ${by}`, `Schema and source IDs checked · awaiting ${a.reviewer}`, a.fundId, { field: 'research.submission', from: a.status, to: 'Needs review', source: id });
+    get().emitCmd(`tasks submit ${id} --json=research.json`, via);
+    return { ok: true, message: `${id} v${revision.version} submitted. Awaiting ${a.reviewer}; portfolio unchanged.` };
+  },
+  reviewResearch: (id, decision, note) => {
+    const a = get().assignments.find((a) => a.id === id);
+    const who = get().identity;
+    if (!a || a.status !== 'Needs review' || !a.revisions.length) return { ok: false, message: 'No submission awaiting review.' };
+    if (who?.role !== 'PM' || who.name !== a.reviewer) return { ok: false, message: `Review is assigned to ${a.reviewer} (PM).` };
+    if (!note.trim()) return { ok: false, message: 'Add a review note or the changes you need.' };
+    const nextId = `${id}-NEXT`;
+    const latest = a.revisions[a.revisions.length - 1];
+    const next: Assignment = {
+      id: nextId, parentId: id, fundId: a.fundId,
+      title: id === 'A-101' ? 'Request Silk River diligence documents' : `Follow up: ${a.title}`,
+      owner: 'M. Lee', reviewer: a.reviewer, due: '2026-09-12', mode: 'deterministic', status: 'Assigned',
+      brief: `Carry-forward conditions: ${latest.content.conditions}\nReviewer instruction: ${note.trim()}`,
+      deliverables: id === 'A-101' ? ['Audited track record', 'Administrator-confirmed redemption terms', 'Independent NAV history'] : ['Response to the review conditions'],
+      sources: a.sources, revisions: [], next: 'Collect the evidence for analyst review. Investment approval remains a separate IC decision.',
+    };
+    set((s) => ({
+      assignments: [
+        ...s.assignments.map((x) => x.id === id ? { ...x, status: decision === 'accepted' ? 'Done' as const : 'In progress' as const, revisions: x.revisions.map((r, i) => i === x.revisions.length - 1 ? { ...r, decision, reviewNote: note.trim(), reviewer: who.name, reviewedAt: now() } : r) } : x),
+        ...(decision === 'accepted' && !s.assignments.some((x) => x.id === nextId) ? [next] : []),
+      ],
+      ...(id === 'A-101' && decision === 'accepted' ? { screener: s.screener.map((c) => c.id === 'SIL' ? { ...c, status: 'IN DD' as const } : c) } : {}),
+    }));
+    get().pushAudit('YOU', `${decision} ${id} v${latest.version} — ${who.name}`, note.trim(), a.fundId, { field: 'research.decision', from: 'Needs review', to: decision, source: id });
+    get().emitCmd(`tasks review ${id} --decision="${decision}"`, 'form');
+    if (decision === 'accepted') get().pushAudit('ENGINE', `created ${nextId} → M. Lee`, `Conditions copied from ${id}; ${id === 'A-101' ? 'Silk River moved to diligence' : 'follow-up assigned'}`, a.fundId);
+    return { ok: true, message: decision === 'accepted' ? `Accepted. ${nextId} assigned to Operations with the review conditions.` : 'Returned to the analyst. The previous submission and review are retained.', ...(decision === 'accepted' ? { nextId } : {}) };
+  },
   identity: null,
   tab: 'ops',
   view: 'today',
@@ -210,7 +285,6 @@ export const useStore = create<State>((set, get) => ({
   policyOpen: false,
   ddSel: 'SAB',
   ddVerdicts: seedVerdicts,
-  silkRequested: false,
   extractRuns: 0,
   shellLines: [
     'apex shell — same rails, for agents and power users · try `help`',
@@ -285,6 +359,10 @@ export const useStore = create<State>((set, get) => ({
         ...s.capitalNotes,
       ],
       ledger: [{ rid, title: `Allocation ticket #${ticket + 1} — IC signed`, wid: 'W-PORT', by: `${identity.name} (PM)`, ts: '09-07 ' + now().slice(0, 5) }, ...s.ledger],
+      assignments: [
+        ...s.assignments.map((a) => a.destination === 'book' && a.status !== 'Done' ? { ...a, status: 'Done' as const, next: `Allocation ticket #${ticket + 1} signed; Operations instruction review assigned.` } : a),
+        { id: `IC-${ticket + 1}-OPS`, fundId: 'SAB', title: `Review capital instructions · ticket #${ticket + 1}`, owner: 'M. Lee', reviewer: identity.name, due: '2026-09-08', mode: 'deterministic' as const, status: 'Assigned' as const, brief: `PM-approved target changes: ${changed || 'no weight change'}. Prepare the instructions and verify dealing dates before external execution. Approval of a target book does not mean a trade has settled.`, deliverables: ['Instruction review', 'Dealing dates and administrator confirmation'], sources: [], revisions: [], next: 'Record dispatch and administrator response. Track execution separately from the target book.' },
+      ],
     }));
     changedPairs.forEach(([k, v]) => {
       if (k === 'CASH') return;
@@ -365,9 +443,9 @@ export const useStore = create<State>((set, get) => ({
     if (!q || q.done) return;
     const rid = 'R-' + String(ridN++).padStart(4, '0');
     const nq = get().queue.slice();
-    nq[i] = { ...q, done: true, rid };
+    nq[i] = { ...q, draft: opts?.draft ?? q.draft, done: true, rid };
     const edited = opts?.fieldsEdited?.length ? `fields_edited ${opts.fieldsEdited.join(',')}` : '';
-    const detail = [q.title, opts?.note, edited].filter(Boolean).join(' · ');
+    const detail = [q.title, opts?.draft ?? q.draft, opts?.note, edited].filter(Boolean).join(' · ');
     set((s) => ({
       queue: nq,
       ledger: [{ rid, title: q.title, wid: q.wid, by: s.identity ? `${s.identity.name} (${s.identity.role})` : 'you', ts: '09-07 ' + now().slice(0, 5) }, ...s.ledger],
@@ -391,10 +469,13 @@ export const useStore = create<State>((set, get) => ({
   approveDoc: (id) => {
     const doc = get().docs.find((d) => d.id === id);
     if (!doc || doc.status !== 'pending') return;
+    const errors = documentErrors(doc);
+    if (errors.length) { toast.error('Record needs correction', { description: errors.join(' ') }); return; }
     const edited = doc.editedFields.length ? `fields_edited ${doc.editedFields.join(',')}` : '';
     get().pushAudit('AGENT', `drafted ${doc.id} — ${doc.title}`, `overall ${(doc.overall * 100).toFixed(0)}%`, doc.fundId ?? doc.id);
     set((s) => ({
       docs: s.docs.map((d) => (d.id === id ? { ...d, status: 'approved' as const } : d)),
+      assignments: s.assignments.map((a) => a.docId === id ? { ...a, status: 'Done', next: 'Document approved and filed in the shared fund record.' } : a),
     }));
     if (id === 'hal-nav-08') {
       get().ackHalcyon();
@@ -434,14 +515,21 @@ export const useStore = create<State>((set, get) => ({
   editDocField: (id, key, value) => {
     const doc = get().docs.find((d) => d.id === id);
     if (!doc || doc.status !== 'pending') return;
+    if (key === 'fee_delta_usd') return;
     const first = !doc.editedFields.includes(key);
     set((s) => ({
       docs: s.docs.map((d) => {
         if (d.id !== id) return d;
+        const fields = d.fields.map((f) => (f.key === key ? { ...f, value, editedBy: 'YOU' as const } : { ...f }));
+        if (id === 'hal-nav-08') {
+          const n = (k: string) => Number(fields.find((f) => f.key === k)?.value);
+          const delta = feeAdjustment(n('nav_usd'), n('fee_charged_pct'), n('fee_expected_pct'));
+          fields.forEach((f) => { if (f.key === 'fee_delta_usd') f.value = delta; });
+        }
         return {
           ...d,
           editedFields: first ? [...d.editedFields, key] : d.editedFields,
-          fields: d.fields.map((f) => (f.key === key ? { ...f, value, editedBy: 'YOU' } : f)),
+          fields,
         };
       }),
     }));
@@ -591,11 +679,12 @@ export const useStore = create<State>((set, get) => ({
     if (get().halAck) return;
     const rid = 'R-' + String(ridN++).padStart(4, '0');
     const who = get().identity;
+    const delta = get().docs.find((d) => d.id === 'hal-nav-08')?.fields.find((f) => f.key === 'fee_delta_usd')?.value;
     set((s) => ({
       halAck: true,
-      ledger: [{ rid, title: 'Halcyon restatement acknowledged — fee recompute −$27,360 filed', wid: 'W-OPS-HAL', by: who ? `${who.name} (${who.role})` : 'you', ts: '09-07 ' + now().slice(0, 5) }, ...s.ledger],
+      ledger: [{ rid, title: `Halcyon restatement acknowledged — fee comparison $${delta} filed`, wid: 'W-OPS-HAL', by: who ? `${who.name} (${who.role})` : 'you', ts: '09-07 ' + now().slice(0, 5) }, ...s.ledger],
     }));
-    get().pushAudit('YOU', 'acknowledged Halcyon restatement — fee recompute −$27,360 filed', `filed ${rid}`, 'HAL', {
+    get().pushAudit('YOU', `acknowledged Halcyon restatement — fee comparison $${delta} filed`, `filed ${rid}`, 'HAL', {
       field: 'pack.ack',
       from: 'EXCEPTION',
       to: 'acknowledged',
@@ -649,18 +738,6 @@ export const useStore = create<State>((set, get) => ({
     toast.success(`verdict filed ${vid} — ${st} · report ${rid}`, { description: `apex dd verdict ${fundId} --state=${st}` });
   },
 
-  requestSilkPack: () => {
-    if (get().silkRequested) return;
-    const wid = 'W-' + String(widN++).padStart(4, '0');
-    set((s) => ({
-      silkRequested: true,
-      queue: [{ wid, origin: 'ONBOARDING · SILK RIVER', title: 'Silk River Frontier — request-pack chase (T+5)', draft: 'Administrator notified for 4 missing required sources (audit, NAVs, track, regulatory). Chase due 2026-09-12. Sign to file.', done: false }, ...s.queue],
-    }));
-    get().pushAudit('YOU', 'requested pack — Silk River Frontier (onboarding)', `chase ${wid} · 4 of 6 required sources missing`, SILK);
-    get().emitCmd('dd request-pack SILK', 'form');
-    toast.success('pack requested — chase queued → Today', { description: 'apex dd request-pack SILK' });
-  },
-
   setAudit: (b) => set({ auditOpen: b }),
   setShell: (b) => set({ shellOpen: b }),
   setDdq: (b) => set({ ddqOpen: b }),
@@ -672,11 +749,11 @@ export const useStore = create<State>((set, get) => ({
   shellPrint: (s) => set((st) => ({ shellLines: [...st.shellLines, s] })),
   emitCmd: (cmd, via) =>
     set((s) => {
-      const tag = via === 'engine' ? 'engine · scheduled' : s.identity ? `${s.identity.email.split('@')[0]} · ${s.identity.role} · via ${via}` : `anon · via ${via}`;
+      const tag = via === 'engine' ? 'engine · scheduled' : via === 'cli' || via === 'shell' ? `agent · via ${via}` : s.identity ? `${s.identity.email.split('@')[0]} · ${s.identity.role} · via ${via}` : `anon · via ${via}`;
       return { shellLines: [...s.shellLines, `» ${cmd}    # ${tag}`] };
     }),
   closeAllOverlays: () =>
-    set({ auditOpen: false, shellOpen: false, ddqOpen: false, paletteOpen: false, entityAudit: null, modulesOpen: false, policyOpen: false }),
+    set({ auditOpen: false, shellOpen: false, ddqOpen: false, paletteOpen: false, entityAudit: null, modulesOpen: false, policyOpen: false, assignmentId: null }),
 }));
 
 export function openApprovals(s: Pick<State, 'queue' | 'trigAssessed' | 'gateOpen' | 'docs'>): number {

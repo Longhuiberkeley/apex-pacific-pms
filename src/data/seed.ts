@@ -1,4 +1,5 @@
 import type { DocRecord, Fund, ScreenerItem } from '../lib/types';
+import { feeAdjustment } from '../lib/fees';
 
 // Clock pinned like v1 — boot parity depends on it.
 export const DEMO_NOW = new Date(2026, 8, 7); // 2026-09-07
@@ -37,15 +38,15 @@ export const AGENT_BOOK_B: Record<string, number> = {
 export const AGENT_SUM_B = 99.8;
 
 export const SCREENER_SEED: ScreenerItem[] = [
-  { id: 'OXM', name: 'Oxbridge Macro', ticker: 'OXM', score: 81, tag: 'Capacity', reason: 'Filing indicates 42% growth in European enterprise orders.', cite: 'CIT-SCR-OXM-01', status: 'NEW', origin: 'EXTRACT', addedAt: '09:22' },
-  { id: 'CAL', name: 'Caldera Commodities', ticker: 'CAL', score: 74, tag: 'Key-person', reason: 'Advanced packaging capex raised 18%; guidance beat.', cite: 'CIT-SCR-CAL-02', status: 'NEW', origin: 'EXTRACT', addedAt: '09:24' },
-  { id: 'SIL', name: 'Silk River Frontier', ticker: 'SILK', score: 68, tag: 'Style drift', reason: 'Component localization cutting per-unit BOM ~6.4%.', cite: 'CIT-SCR-SIL-03', status: 'NEW', origin: 'EXTRACT', addedAt: '09:26' },
+  { id: 'OXM', name: 'Oxbridge Macro', ticker: 'OXM', score: 81, tag: 'Capacity', reason: 'Manager reports new capacity in its discretionary macro strategy; confirm terms and independently verified track record.', cite: 'CIT-SCR-OXM-01', status: 'NEW', origin: 'EXTRACT', addedAt: '09:22' },
+  { id: 'CAL', name: 'Caldera Commodities', ticker: 'CAL', score: 74, tag: 'Key-person', reason: 'Commodities manager has announced a portfolio-manager transition; assess key-person provisions before diligence.', cite: 'CIT-SCR-CAL-02', status: 'NEW', origin: 'EXTRACT', addedAt: '09:24' },
+  { id: 'SIL', name: 'Silk River Frontier', ticker: 'SILK', score: null, tag: 'Frontier equities', reason: 'Manager-reported track record; quarterly liquidity requires independent confirmation. Assigned to L. Wu for screening.', cite: 'SIL-OVERVIEW', status: 'NEW', origin: 'EXTRACT', addedAt: '09:26' },
 ];
 
 // Type-1 extract pool — cited, deduped against the watchlist on every run.
 export const EXTRACT_POOL: Array<Omit<ScreenerItem, 'status'>> = [
-  { id: 'VAN', name: 'Vantar Robotics', ticker: 'VANT', score: 77, tag: 'Capacity', reason: 'Two consecutive quarters of booking-to-revenue gap > 18%; channel checks pending.', cite: 'CIT-SCR-VAN-04', origin: 'EXTRACT' },
-  { id: 'SIL', name: 'Silk River Frontier', ticker: 'SILK', score: 68, tag: 'Style drift', reason: 'Component localization cutting per-unit BOM ~6.4% (re-surfaced on new filings).', cite: 'CIT-SCR-SIL-03', origin: 'EXTRACT' },
+  { id: 'VAN', name: 'Vantar Systematic', ticker: 'VANT', score: 77, tag: 'Capacity', reason: 'Systematic futures manager reopened to allocations; request its audited performance and execution-cost history.', cite: 'CIT-SCR-VAN-04', origin: 'EXTRACT' },
+  { id: 'SIL', name: 'Silk River Frontier', ticker: 'SILK', score: null, tag: 'Frontier equities', reason: 'Quarterly liquidity and manager-reported performance require independent confirmation (re-surfaced in a new pack).', cite: 'SIL-OVERVIEW', origin: 'EXTRACT' },
 ];
 
 export const EQUITY_HEDGE = ['KES', 'SAB'];
@@ -62,7 +63,7 @@ export const DOCS_SEED: DocRecord[] = [
     status: 'pending',
     editedFields: [],
     reasoning:
-      'The pack names Halcyon Event-Driven Credit (fund_id) with valuation date 31 August 2026 (as_of) and NAV $17,100,000 (nav_usd). Fee charged 0.15 (fee_charged_pct) versus LPA 0.12 (fee_expected_pct) is a fee_delta; rails recompute fee_delta_usd = −$27,360 — arithmetic from code, not the model. Note 4 restatement_pp −0.8pp after final pricing is supporting context.',
+      'AI reads the fund, valuation date, NAV, fee rates and Note 4. Code compares the stated rates on the same NAV base: $17,100,000 × (0.12% − 0.15%) = −$5,130. This is a simple same-period fee comparison; the July restatement is a separate exception, not the basis of this calculation.',
     fields: [
       { key: 'fund_id', label: 'Fund', value: 'HAL', conf: 0.99, required: true, snippet: 'Halcyon Event-Driven Credit' },
       { key: 'as_of', label: 'Valuation date', value: '2026-08-31', conf: 0.97, required: true, snippet: '31 August 2026' },
@@ -70,7 +71,7 @@ export const DOCS_SEED: DocRecord[] = [
       { key: 'fee_charged_pct', label: 'Fee charged', value: 0.15, conf: 0.94, required: true, snippet: 'management fee charged 0.15%' },
       { key: 'fee_expected_pct', label: 'Fee (LPA)', value: 0.12, conf: 0.91, required: true, snippet: 'LPA 0.12%' },
       { key: 'restatement_pp', label: 'Restatement', value: -0.8, conf: 0.93, required: false, snippet: 'July NAV restated −0.8pp' },
-      { key: 'fee_delta_usd', label: 'Fee delta', value: -27360, conf: 0.96, required: true, snippet: 'fee accrual recomputed −$27,360' },
+      { key: 'fee_delta_usd', label: 'Fee adjustment', value: feeAdjustment(17100000, 0.15, 0.12), conf: 1, required: true, snippet: 'Code: NAV × (expected − charged) / 100' },
     ],
   },
   {

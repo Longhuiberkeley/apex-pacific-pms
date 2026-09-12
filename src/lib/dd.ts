@@ -32,7 +32,7 @@ export function flagItems(id: string): Array<{ tone: FlagTone; label: string; bo
       ];
     case 'HAL':
       return [
-        { tone: 'amber', label: 'Restatement', body: 'July NAV restated −0.8pp after final pricing → fee accrual recomputed −$27,360.' },
+        { tone: 'amber', label: 'Restatement', body: 'July NAV restated −0.8pp after final pricing. Separately, the current pack shows a 0.15% fee versus 0.12% expected; inspect the code-computed comparison in Documents.' },
       ];
     case 'KUR':
       return [

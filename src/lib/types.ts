@@ -87,8 +87,8 @@ export interface EntityHistory {
 
 export type Book = Record<string, number>;
 
-export type AppView = 'today' | 'book' | 'fund';
-export type FundTab = 'overview' | 'exposure' | 'documents' | 'history' | 'verdicts';
+export type AppView = 'today' | 'book' | 'fund' | 'team';
+export type FundTab = 'overview' | 'exposure' | 'documents' | 'history' | 'verdicts' | 'work';
 export type IntakePolicy = 'AUTO' | 'MANUAL';
 
 export type DocKind = 'pdf' | 'email';

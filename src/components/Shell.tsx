@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useStore } from '../lib/store';
 import { VERBS, FENCE } from '../lib/verbs';
 import { cn } from '../lib/cn';
+import { executeAgentCommand } from '../lib/agent';
 
 function lineTone(l: string) {
   if (l.startsWith('»')) return 'text-pass-lt/80';
@@ -55,7 +56,11 @@ export default function Shell() {
     if (!c) return;
     P(`apex$ ${c}`);
     const [verb, ...rest] = c.split(/\s+/);
-    if (verb === 'help') {
+    if (['tasks', 'funds', 'docs'].includes(verb) || (verb === 'book' && rest[0] === 'get')) {
+      const result = executeAgentCommand(c);
+      P(`${result.ok ? '✓' : '⛔'} ${result.message ?? 'Record retrieved'}`);
+      if (result.data) P(JSON.stringify(result.data, null, 2));
+    } else if (verb === 'help') {
       P('every verb maps to a form, a row, or a lever — forms echo back here:');
       VERBS.forEach((v) => P(`  ${v.cmd.padEnd(30)} ${v.desc}${v.gate ? '  ⚠ ' + v.gate : ''}`));
     } else if (verb === 'whoami') {
@@ -124,7 +129,7 @@ export default function Shell() {
             if (e.key === 'Enter') run(cmd);
             if (e.key === 'Escape') closeAllOverlays();
           }}
-          placeholder="try: agent demo · help · history"
+          placeholder="try: tasks get A-101 · tasks submit A-101 --example · help"
           className="flex-1 bg-transparent font-mono text-[12px] text-[#F6F3EC] outline-none placeholder:text-white/25"
         />
       </div>

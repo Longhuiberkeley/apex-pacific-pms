@@ -100,12 +100,6 @@ function HalNav({ active, onAct }: { active: string | null; onAct: (k: string) =
               {H('fee_expected_pct', '0.12%')}
             </td>
           </tr>
-          <tr className="border-t border-line">
-            <td className="py-2">Fee delta (rails)</td>
-            <td className="py-2 text-right font-mono tabular-nums">
-              {H('fee_delta_usd', '−$27,360')}
-            </td>
-          </tr>
         </tbody>
       </table>
       <div className="mt-6 border-t border-line pt-3 text-[12px] leading-relaxed text-muted">
@@ -205,9 +199,6 @@ function MeridianMail({ active, onAct }: { active: string | null; onAct: (k: str
         {H('cash_usd', '3.42M')}, and the {H('fee_charged_pct', '0.15%')} management fee looks off — we
         had {H('fee_expected_pct', '0.12%')} last month. There are also {H('fx_lines', 'two FX lines')} I
         did not expect.
-        <span className="mt-3 block text-[12px] text-muted">
-          {H('flags', 'fee_delta, unexpected_fx')}
-        </span>
       </div>
     </Paper>
   );

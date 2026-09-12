@@ -11,6 +11,9 @@ import Login from './components/Login';
 import Portfolio from './components/Portfolio';
 import Shell from './components/Shell';
 import Palette from './components/Palette';
+import Team from './components/Team';
+import Assignment from './components/Assignment';
+import { startAgentBridge } from './lib/agentBridge';
 import { AuditDrawer, DdqExport, EntityAudit } from './components/Drawers';
 
 /** dev-only boot-parity assertion — the demo checks itself the way it checks books */
@@ -44,6 +47,10 @@ export default function App() {
   const shellOpen = useStore((s) => s.shellOpen);
 
   useEffect(() => {
+    if (import.meta.env.DEV && identity) return startAgentBridge();
+  }, [identity]);
+
+  useEffect(() => {
     const h = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
@@ -59,10 +66,11 @@ export default function App() {
       }
       // never switch views under an open overlay — the visible surface owns the keys
       const s = useStore.getState();
-      if (s.auditOpen || s.ddqOpen || s.paletteOpen || s.shellOpen || s.modulesOpen || s.policyOpen) return;
+      if (s.auditOpen || s.ddqOpen || s.paletteOpen || s.shellOpen || s.modulesOpen || s.policyOpen || s.assignmentId) return;
       if (e.key === '1') setView('today');
       else if (e.key === '2') setView('book');
       else if (e.key === '3') setAudit(true);
+      else if (e.key === '4') setView('team');
       else if (e.key === '`') setShell(!useStore.getState().shellOpen);
     };
     document.addEventListener('keydown', h);
@@ -70,8 +78,8 @@ export default function App() {
   }, [setView, setAudit, setShell, setPalette]);
 
   useEffect(() => {
-    if (identity && import.meta.env.DEV) parityCheck();
-  }, [identity]);
+    if (import.meta.env.DEV) parityCheck();
+  }, []);
 
   return (
     <div className="min-h-screen bg-paper text-ink">
@@ -97,12 +105,14 @@ export default function App() {
               {view === 'today' && <Today />}
               {view === 'book' && <Portfolio />}
               {view === 'fund' && <FundPage />}
+              {view === 'team' && <Team />}
             </main>
           </div>
           <AuditDrawer />
           <DdqExport />
           <EntityAudit />
           <ModulesSheet />
+          <Assignment />
           <Palette />
           <Shell />
         </div>
