@@ -110,7 +110,7 @@ export default function DocReview({
               <tr className="text-left text-[12px] text-muted">
                 <th className="h-10 bg-paper px-3 font-medium">Field</th>
                 <th className="h-10 bg-paper px-3 font-medium">{doc.status === 'pending' ? 'Draft value' : 'Reviewed value'}</th>
-                <th className="h-10 bg-paper px-3 font-medium">Conf</th>
+                <th className="h-10 bg-paper px-3 font-medium">Confidence</th>
               </tr>
             </thead>
             <tbody>
@@ -156,7 +156,7 @@ export default function DocReview({
                             human ? 'bg-ink' : f.conf >= 0.85 ? 'bg-ai' : f.conf >= 0.7 ? 'bg-wait' : 'bg-stop'
                           )}
                         />
-                        {f.key === 'fee_delta_usd' ? 'code' : human ? 'human' : f.conf.toFixed(2)}
+                        {f.key === 'fee_delta_usd' ? 'Calculated' : human ? 'human' : f.conf.toFixed(2)}
                       </span>
                     </td>
                   </tr>
@@ -180,7 +180,7 @@ export default function DocReview({
       </div>
 
       {errors.length > 0 && <p role="alert" className="border-t border-line px-4 py-2 text-[12px] text-stop">{errors.join(' ')}</p>}
-      <div className="border-t border-line bg-paper px-4 py-2 text-xs">{doc.status === 'pending' ? 'Approve the reviewed values below into Data library → Structured records. The original file stays unchanged.' : `Document ${doc.status}. Saved records are read-only.`}</div>
+      <div className="border-t border-line bg-paper px-4 py-2 text-xs">{doc.status === 'pending' ? 'Approve the reviewed values below into Documents & data → Approved data. The original file stays unchanged.' : `Document ${doc.status}. Saved records are read-only.`}</div>
       {doc.status === 'pending' ? <HitlTriad
         approveLabel="Approve & save record"
         hotkeys

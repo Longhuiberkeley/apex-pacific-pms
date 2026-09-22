@@ -35,12 +35,23 @@ try {
  const committed=JSON.stringify(S.getState().book);S.getState().stage({...S.getState().book,NOR:90});S.getState().approveGate();check(JSON.stringify(S.getState().book)===committed,'Invalid allocation cannot be committed');S.getState().clearStage();S.getState().stage({...S.getState().book,SAB:5,CASH:17});S.getState().login('l.wu@apexpacific.example');S.getState().approveGate();check(JSON.stringify(S.getState().book)===committed,'Analyst cannot commit a valid allocation');S.getState().login('a.chan@apexpacific.example');S.getState().approveGate();check(S.getState().book.SAB===5,'PM can commit valid allocation');S.getState().setView('screening');return logs;
  })()`);
  for(const check of checks)console.log('PASS',check);
+ assert.deepEqual(await evaluate(`[...document.querySelectorAll('nav[aria-label="Main navigation"] button')].map(b=>b.querySelector('span').textContent)`),['Today','Funds','Portfolio'],'Three primary destinations');
+ await evaluate(`window.demoStore.getState().openRecord('DATA-hal-nav-08')`);await wait(100);
+ assert.deepEqual(await evaluate(`({view:window.demoStore.getState().view,fund:window.demoStore.getState().fundId,tab:window.demoStore.getState().fundTab})`),{view:'fund',fund:'HAL',tab:'documents'},'Approved NAV opens in its fund');
+ assert(!(await evaluate('document.querySelector("main").innerText')).includes('Meridian_Statement'),'Fund documents omit unrelated funds');
+ await evaluate(`window.demoStore.getState().openFund('NOR');window.demoStore.getState().setFundTab('work')`);await wait(100);
+ assert((await evaluate('document.querySelector("main").innerText')).includes('Independent valuation controls'),'Diligence has descriptive names');
+ assert(!/CHK-[0-9]+|SLA-02|pack[.]sla|ENGINE/.test(await evaluate('document.querySelector("main").innerText')),'Internal references are hidden by default');
+ await evaluate(`window.demoStore.getState().openFund('SAB');window.demoStore.getState().setFundTab('history')`);await wait(100);
+ assert(!/CHK-[0-9]+|SLA-02|pack[.]sla|ENGINE/.test(await evaluate('document.querySelector("main").innerText')),'Activity uses plain language');
+ console.log('PASS main navigation, fund record routing, document isolation and language');
  await wait(200);
  for(const [width,height] of [[1280,720],[1920,1080]]){
   await call('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
   for(const view of ['screening','library','monitoring','fees','team']){
    await evaluate(`window.demoStore.getState().setView('${view}')`);await wait(100);
    assert(await evaluate('document.querySelector("main").innerText.length>50'),`${view} renders`);
+   if(view==='fees')assert((await evaluate('document.querySelector("main").innerText')).includes('Proposed reconciliation'),'Fee worksheet is reachable within fund operations');
    assert(await evaluate('document.documentElement.scrollWidth<=innerWidth'),`${view} no page overflow at ${width}`);
    const shot=await call('Page.captureScreenshot',{format:'png'});await writeFile(`/tmp/apex-${view}-${width}.png`,Buffer.from(shot.data,'base64'));
   }
@@ -57,7 +68,7 @@ try {
  // Click through the document flow from a fresh browser session.
  await call('Page.reload');await wait(1000);
  const click=async label=>{await evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(!button)throw Error('Missing button: '+${JSON.stringify(label)});button.click();})()`);await wait(100);};
- await click('Skip MFA');await click('Data library');
+ await click('Skip MFA');await click('Document intake');
  await evaluate(`document.querySelectorAll('button').forEach(b=>{if(b.textContent.startsWith('PacificFundServices_September_Invoice.pdf'))b.click();})`);await wait(100);
  assert((await evaluate('document.body.innerText')).includes('Draft value'),'Document review labels draft values');
  await click('Original PDF');assert(await evaluate(`document.querySelector('iframe')?.title === 'PacificFundServices_September_Invoice.pdf'`),'Original PDF viewer opens');await click('Annotated review');

@@ -39,10 +39,11 @@ export default function Palette() {
 
         <Command.Group heading="Go">
           <Item onSelect={nav(() => setView('today'))}>Today</Item>
-          <Item onSelect={nav(() => setView('team'))}>Team workspace · assignments & reviews</Item>
-          <Item onSelect={nav(() => setView('book'))}>Book</Item>
-          <Item onSelect={nav(() => setAudit(true))}>Audit</Item>
-          <Item onSelect={nav(() => setModules(true))}>Modules</Item>
+          <Item onSelect={nav(() => setView('team'))}>Today · Team work</Item>
+          <Item onSelect={nav(() => setView('funds'))}>Funds · candidates and invested managers</Item>
+          <Item onSelect={nav(() => setView('book'))}>Portfolio</Item>
+          <Item onSelect={nav(() => setAudit(true))}>All activity</Item>
+          <Item onSelect={nav(() => setModules(true))}>Presenter tools · how this demo works</Item>
           <Item onSelect={nav(() => setShell(true))}>Shell</Item>
         </Command.Group>
 
@@ -53,7 +54,7 @@ export default function Palette() {
               r.ok ? toast.success(r.msg) : toast.message(r.msg);
             })}
           >
-            screen extract --now <span className="text-muted">· Type 1, cited, deduped</span>
+            screen extract --now <span className="text-muted">· AI extraction with source references and duplicate detection</span>
           </Item>
           <Item
             onSelect={nav(() => {

@@ -1,3 +1,4 @@
+import { plainText } from '../lib/language';
 import { canReadWork } from '../lib/records';
 import { useState } from 'react';
 import { ArrowUpRight, Clock3, UserRound, Terminal } from 'lucide-react';
@@ -17,11 +18,11 @@ export function WorkCard({ assignment: a }: { assignment: Assignment }) {
   if (!permitted) return <div className="rounded border border-line p-3 text-xs text-muted">Restricted assignment · PM access required</div>;
   return (
     <button onClick={() => openAssignment(a.id)} className="group block w-full rounded-lg border border-line bg-surface p-3 text-left shadow-card transition hover:-translate-y-0.5 hover:border-ai/40 hover:shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ai">
-      <div className="mb-2 flex items-center justify-between gap-2 text-[12px] text-muted"><span>{a.fundId} · {a.id}</span><ArrowUpRight size={14} className="text-muted group-hover:text-ai" /></div>
-      <h3 className="text-[14px] font-semibold leading-snug text-ink">{a.title}</h3>
+      <div className="mb-2 flex items-center justify-between gap-2 text-[12px] text-muted"><span>{a.status}</span><ArrowUpRight size={14} className="text-muted group-hover:text-ai" /></div>
+      <h3 className="text-[14px] font-semibold leading-snug text-ink">{plainText(a.title)}</h3>
       <p className="mt-1 truncate text-[12px] text-muted" title={name}>{name}</p>
       <div className="mt-3"><ModeBadge mode={a.mode} /></div>
-      <p className="mt-2 text-[12px] leading-relaxed text-muted">{a.blocker ?? (a.status === 'Needs review' ? `Submission ready for ${a.reviewer}` : a.status === 'Done' ? 'Filed in the shared record' : a.draft ? 'Research draft ready to submit' : a.next)}</p>
+      <p className="mt-2 text-[12px] leading-relaxed text-muted">{plainText(a.blocker ?? (a.status === 'Needs review' ? `Submission ready for ${a.reviewer}` : a.status === 'Done' ? 'Filed in the shared record' : a.draft ? 'Research draft ready to submit' : a.next))}</p>
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-2 text-[12px]">
         <span className="flex items-center gap-1.5 text-ink"><UserRound size={12} />{a.owner}</span>
         <span className={cn('flex items-center gap-1 font-mono', overdue ? 'text-stop' : 'text-muted')}><Clock3 size={12} />{overdue ? 'Overdue' : a.due.slice(5)}</span>
@@ -47,13 +48,10 @@ export default function Team() {
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div><h1 className="text-[24px] font-semibold tracking-tight">Team workspace</h1><p className="mt-1 text-[13px] text-muted">People, agents and operations — working from the same fund record.</p></div>
-        <div className="flex items-center gap-2">
-          <label className="text-[12px] text-muted">Demo role <select aria-label="Demo role" value={identity?.role} onChange={(e) => login(e.target.value === 'PM' ? 'a.chan@apexpacific.example' : 'l.wu@apexpacific.example')} className="ml-1 rounded border border-line bg-surface p-1.5 text-ink"><option value="PM">A. Chan · PM</option><option value="Analyst">L. Wu · Analyst</option></select></label>
-          <Btn onClick={() => setShell(true)}><Terminal size={13} />Agent console</Btn>
-        </div>
+        <div><h1 className="text-[24px] font-semibold tracking-tight">Team work</h1><p className="mt-1 text-[13px] text-muted">People, agents and operations — working from the same fund record.</p></div>
+
       </header>
-      <WorkModes />
+
       <div className="flex flex-wrap gap-3 text-[13px]">
         <button onClick={() => { setScope('review'); setPerson('all'); }} className="rounded-md border border-ai/20 bg-ai/5 px-3 py-2 text-ai hover:bg-ai/10"><strong>{reviews}</strong> submissions need your review</button>
         <span className="rounded-md border border-line bg-surface px-3 py-2"><strong>{blocked}</strong> waiting externally</span>

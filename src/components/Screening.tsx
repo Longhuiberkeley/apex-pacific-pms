@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../lib/store';
 import { DEFAULT_CRITERIA, METRICS, evaluate, validCriteria } from '../lib/screening';
 import { Btn } from './Ui';
-export default function Screening() {
+export default function Screening({embedded=false}:{embedded?:boolean}) {
   const s = useStore();
   const [draft, setDraft] = useState(() => structuredClone(s.criteria));
   const [filter, setFilter] = useState('All');
@@ -12,7 +12,7 @@ export default function Screening() {
   const current = results.find(r => r.fund.id === selected);
   const changed = JSON.stringify(draft) !== JSON.stringify(s.criteria);
   return <div className="space-y-5">
-    <header><h1 className="text-2xl font-semibold">Screening</h1><p className="mt-1 text-sm text-muted">Prepare a shortlist. Inspect the evidence. Decide what deserves an analyst’s time.</p></header>
+    <header><h1 className="text-xl font-semibold">{embedded?'Candidate screening':'Screening'}</h1><p className="mt-1 text-sm text-muted">Prepare a shortlist. Inspect the evidence. Decide what deserves an analyst’s time.</p></header>
     <div className="grid grid-cols-4 gap-3">{['All', 'Eligible', 'Outside criteria', 'Needs evidence'].map(label => <button key={label} onClick={() => setFilter(label)} className={`rounded-lg border p-4 text-left ${filter === label ? 'border-ai bg-ai/5' : 'border-line bg-surface'}`}><div className="text-2xl font-mono">{label === 'All' ? results.length : results.filter(r => r.status === label).length}</div><div className="text-sm">{label}</div></button>)}</div>
     <details open className="rounded-lg border border-line bg-surface p-4"><summary className="cursor-pointer font-semibold">Editable criteria <span className="text-xs font-normal text-muted">· illustrative settings · all enabled checks must pass</span></summary>
       <div className="my-4 grid grid-cols-2 gap-3 xl:grid-cols-4">{draft.map((c,i) => { const m=METRICS.find(m=>m.key===c.key)!; return <label key={c.key} className="text-xs"><span className="mb-2 flex gap-2"><input type="checkbox" checked={c.enabled} onChange={e => setDraft(draft.map((x,j)=>j===i?{...x,enabled:e.target.checked}:x))}/>{m.label}</span><span className="flex items-center gap-2">{m.direction==='min'?'≥':'≤'}<input aria-label={m.label} type="number" step="any" min={m.floor} max={m.ceiling} value={Number.isNaN(c.threshold)?'':c.threshold} onChange={e=>setDraft(draft.map((x,j)=>j===i?{...x,threshold:e.target.value===''?NaN:Number(e.target.value)}:x))} className="w-20 rounded border border-line bg-paper p-2"/>{m.unit}</span></label>; })}</div>

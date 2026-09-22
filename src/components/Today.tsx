@@ -1,3 +1,4 @@
+import { plainText } from '../lib/language';
 import { canReadWork } from '../lib/records';
 import { provenance } from '../lib/records';
 import { useEffect, useMemo, useState } from 'react';
@@ -31,7 +32,7 @@ function PolicyChip() {
       onClick={() => setIntakePolicy(policy === 'AUTO' ? 'MANUAL' : 'AUTO')}
       className="rounded border border-line bg-surface px-2 py-1 text-[12px] text-ink hover:bg-paper"
     >
-      Policy {policy}
+      {policy==='AUTO'?'Quick review':'Full review'}
     </button>
   );
 }
@@ -69,7 +70,7 @@ export default function Today() {
   const workDocs = useStore(s=>s.docs);
   const assignments = allAssignments.filter(a=>canReadWork(workReader,a,workDocs));
   const openAssignment = useStore((s) => s.openAssignment);
-  const teamFollowUps = assignments.filter((a) => a.status === 'Needs review' || (a.parentId && a.status !== 'Done'));
+  const teamFollowUps = assignments.filter(a=>a.status!=='Done' && (a.owner===workReader?.name || (a.reviewer===workReader?.name && a.status==='Needs review')));
   const fundLabel = (id: string) => funds.find((f) => f.id === id)?.name.split(' ').slice(0, 2).join(' ') ?? id;
 
   const [filter, setFilter] = useState<Filter>('all');
@@ -108,7 +109,7 @@ export default function Today() {
   useEffect(() => {
     setTaskNote('');
     const q = sel?.kind === 'queue' ? queue.find((x) => x.wid === sel.wid) : undefined;
-    setTaskDraft(q?.draft ?? '');
+    setTaskDraft(plainText(q?.draft ?? ''));
   }, [sel && rowKey(sel)]);
 
   const selectedDoc = sel?.kind === 'doc' ? docs.find((d) => d.id === sel.id) : undefined;
@@ -125,7 +126,7 @@ export default function Today() {
       <div className="flex w-[300px] shrink-0 flex-col border-r border-line bg-surface 2xl:w-[350px]">
         <div className="shrink-0 border-b border-line px-3 py-2.5">
           <div className="mb-2 flex items-center justify-between">
-            <h1 className="text-[15px] font-semibold text-ink">Today</h1>
+            <h1 className="text-[15px] font-semibold text-ink">Review queue</h1>
             <PolicyChip />
           </div>
           <div className="flex gap-1">
@@ -147,15 +148,15 @@ export default function Today() {
             ))}
           </div>
         </div>
-        <button onClick={() => setView('team')} className="border-b border-line bg-ai/5 px-3 py-3 text-left text-[12px] text-ai hover:bg-ai/10"><span className="block font-medium">Team assignments & research ↗</span><span className="mt-1 block">{assignments.filter((a) => a.status === 'Needs review').length} submissions awaiting human review</span></button>
+        <button onClick={() => setView('team')} className="border-b border-line bg-ai/5 px-3 py-3 text-left text-[12px] text-ai hover:bg-ai/10"><span className="block font-medium">Open team assignments ↗</span><span className="mt-1 block">{assignments.filter((a) => a.status === 'Needs review').length} submissions awaiting human review</span></button>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {filter !== 'docs' && teamFollowUps.length > 0 && (
             <section className="border-b border-line bg-ai/[0.03]">
-              <h2 className="px-3 pt-3 text-[12px] font-medium text-muted">Team reviews & follow-ups</h2>
+              <h2 className="px-3 pt-3 text-[12px] font-medium text-muted">Your assignments & reviews</h2>
               {teamFollowUps.map((a) => (
                 <button key={a.id} onClick={() => openAssignment(a.id)} className="block w-full px-3 py-2.5 text-left hover:bg-paper">
                   <span className="block text-[13px] font-medium text-ink">{a.title} ↗</span>
-                  <span className="mt-1 block text-[12px] text-muted">{a.owner} · {a.status} · {a.id}</span>
+                  <span className="mt-1 block text-[12px] text-muted">{a.owner} · {a.status}</span>
                 </button>
               ))}
             </section>
@@ -171,8 +172,8 @@ export default function Today() {
                 >
                   <Pip tone="wait" />
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-medium text-ink">Allocation ticket awaiting IC signature</div>
-                    <div className="mt-0.5 text-[12px] text-muted">Task · Book · staged</div>
+                    <div className="text-[13px] font-medium text-ink">Allocation proposal awaiting portfolio manager approval</div>
+                    <div className="mt-0.5 text-[12px] text-muted">Portfolio · Awaiting approval</div>
                   </div>
                   <Btn size="sm" onClick={(e) => { e.stopPropagation(); setView('book'); }}>
                     Review
@@ -247,7 +248,7 @@ export default function Today() {
                 >
                   <Pip tone="stop" />
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-medium text-ink">Sable Creek — August NAV 23d past SLA</div>
+                    <div className="text-[13px] font-medium text-ink">Sable Creek — August NAV report is 23 days overdue</div>
                     <div className="mt-0.5 text-[12px] text-muted">
                       Task ·{' '}
                       <span
@@ -257,7 +258,7 @@ export default function Today() {
                       >
                         Sable Creek
                       </span>
-                      {' '}· last as-of 2026-07-31
+                      {' '}· Latest NAV date 2026-07-31
                     </div>
                   </div>
                   <Btn size="sm" onClick={(e) => { e.stopPropagation(); setSel(r); }}>
@@ -267,7 +268,7 @@ export default function Today() {
               );
             }
             if (r.kind === 'broker') {
-              const state = !brokerParsed ? 'Arrived' : !reconciled ? 'Parsed' : 'Reconciled';
+              const state = !brokerParsed ? 'Arrived' : !reconciled ? 'Data extracted' : 'Reconciled';
               return (
                 <div role="group" tabIndex={0} onKeyDown={e=>{if(e.target===e.currentTarget && (e.key==='Enter' || e.key===' ')){e.preventDefault();setSel(r);}}}
                   key="broker"
@@ -295,8 +296,8 @@ export default function Today() {
               >
                 <Pip tone="wait" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-medium text-ink">{q.title}</div>
-                  <div className="mt-0.5 text-[12px] text-muted">Task · {q.origin} · {q.wid}</div>
+                  <div className="text-[13px] font-medium text-ink">{plainText(q.title)}</div>
+                  <div className="mt-0.5 text-[12px] text-muted">Task · {plainText(q.origin)}</div>
                 </div>
                 <Btn size="sm" onClick={(e) => { e.stopPropagation(); setSel(r); }}>
                   Review
@@ -325,8 +326,8 @@ export default function Today() {
 
         {sel?.kind === 'gate' && (
           <div className="p-5">
-            <h2 className="text-[15px] font-semibold text-ink">Allocation ticket awaiting IC signature</h2>
-            <p className="mt-2 text-[13px] text-muted">Staged proposal is at the Book gate. Approve is PM-only.</p>
+            <h2 className="text-[15px] font-semibold text-ink">Allocation proposal awaiting portfolio manager approval</h2>
+            <p className="mt-2 text-[13px] text-muted">Review the proposed allocation in Portfolio. A portfolio manager must approve it.</p>
             <div className="mt-4">
               <Btn tone="emerald" onClick={() => setView('book')}>
                 Review
@@ -336,33 +337,11 @@ export default function Today() {
         )}
 
         {sel?.kind === 'sable' && (
-          <div className="p-5">
-            <h2 className="text-[15px] font-semibold text-ink">Sable Creek — August NAV 23d past SLA</h2>
-            <p className="mt-2 text-[13px] leading-relaxed text-muted">
-              Last as-of 2026-07-31. Type-1 link suggestion needs confirm; explain-and-assess drafts a reviewable workup.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                onClick={confirmLink}
-                className={cn(
-                  'rounded border border-dashed border-ai px-2 py-1 text-[12px] text-ai transition-colors hover:bg-ai/10',
-                  linkConfirmed && 'border-solid bg-ai/10'
-                )}
-              >
-                {linkConfirmed ? 'Link confirmed' : 'Confirm Type-1 link'}
-              </button>
-              <Btn
-                size="sm"
-                tone="amber"
-                onClick={() => {
-                  assessSable();
-                  const next = useStore.getState().queue[0];
-                  if (next) setSel({ kind: 'queue', wid: next.wid });
-                }}
-              >
-                Explain and assess
-              </Btn>
-            </div>
+          <div className="space-y-4 p-5">
+            <h2 className="text-lg font-semibold">Sable Creek — August NAV report is overdue</h2>
+            <p className="text-sm text-muted">The latest NAV is dated 31 July. Operations is waiting for the administrator’s August report. The outdated NAV also limits the permitted portfolio allocation.</p>
+            <p className="text-sm">Research owner: L. Wu · Reviewer: A. Chan</p>
+            <div className="flex gap-3"><Btn onClick={()=>{useStore.getState().runMonitoring('SAB');openAssignment('MON-SAB');}}>Open investigation</Btn><Btn onClick={()=>{openFund('SAB');useStore.getState().setFundTab('operations');}}>View fund operations</Btn></div>
           </div>
         )}
 
@@ -383,8 +362,8 @@ export default function Today() {
         {selectedQ && !selectedQ.done && (
           <div className="flex h-full min-h-0 flex-col">
             <div className="min-h-0 flex-1 overflow-auto p-5">
-              <div className="text-[12px] text-muted">{selectedQ.origin} · {selectedQ.wid}</div>
-              <h2 className="mt-1 text-[15px] font-semibold text-ink">{selectedQ.title}</h2>
+              <div className="text-[12px] text-muted">{plainText(selectedQ.origin)}</div>
+              <h2 className="mt-1 text-[15px] font-semibold text-ink">{plainText(selectedQ.title)}</h2>
               <textarea
                 value={taskDraft}
                 onChange={(e) => setTaskDraft(e.target.value)}
@@ -448,20 +427,20 @@ function BrokerPane({
   queueFx: () => void;
   openFund: (id: string) => void;
 }) {
-  const state = !brokerParsed ? 'Arrived' : !reconciled ? 'Parsed' : 'Reconciled';
+  const state = !brokerParsed ? 'Arrived' : !reconciled ? 'Data extracted' : 'Reconciled';
   return (
     <div className="p-5">
       <div className="flex items-center gap-2">
         <FileSpreadsheet size={14} className="text-muted" />
         <h2 className="font-mono text-[15px] font-semibold text-ink">prime_broker_statement_2026-08.xls</h2>
-        <Badge tone={state === 'Arrived' ? 'slate' : state === 'Parsed' ? 'blue' : 'amber'}>{state}</Badge>
+        <Badge tone={state === 'Arrived' ? 'slate' : state === 'Data extracted' ? 'blue' : 'amber'}>{state}</Badge>
       </div>
       <p className="mt-1 text-[12px] text-muted">2.1 MB · arrived Mon 09-07 08:02</p>
 
       <div className="mt-4 space-y-3">
         {!brokerParsed && (
           <Btn size="sm" tone="blue" onClick={parseBroker}>
-            Parse
+            Extract data
           </Btn>
         )}
         {brokerParsed && !reconciled && (
@@ -491,13 +470,13 @@ function BrokerPane({
               onClick={() => openFund('HAL')}
               className="rounded border border-line bg-surface px-2 py-1 text-[12px] text-ink hover:bg-paper"
             >
-              fee_delta → Halcyon
+              Fee discrepancy → Halcyon
             </button>
             {fxQueued ? (
               <Badge tone="emerald">Fx explanation queued</Badge>
             ) : (
               <Btn size="sm" tone="amber" onClick={queueFx}>
-                unexpected_fx — queue explanation
+                Unexplained FX entries — queue explanation
               </Btn>
             )}
           </div>

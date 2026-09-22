@@ -5,18 +5,15 @@
 > entity, document, and number here is invented for a live demo. No real fund, vendor, or data.
 > It is the companion demo for the talk *Entering 2027: A Practical Guide to AI*.
 
-## New local workflow
+## Current local navigation
 
-See [the analyst workflow walkthrough](DEMO_V3_WALKTHROUGH.md) for editable screening, original PDFs → approved structured records, role-based document access, external candidate intake, monitoring investigations and management fee reconciliation. These changes are local until deployed; the public site may show the previous version.
+Start with the [fund workflow walkthrough](DEMO_V3_WALKTHROUGH.md). The main navigation is **Today, Funds, Portfolio**. Each fund holds its **Overview, Research & diligence, Documents & data, Operations, Activity**. Today provides My work, Team work and Document intake. Screening compares candidates in Funds; monitoring and fees are under each fund’s Operations section.
 
-- **Screening:** eight editable checks with per-candidate evidence and research handoff.
-- **Data library:** immutable source files, reviewable drafts and approved typed records. Approval saves a snapshot; refresh resets browser records.
-- **Access:** switch PM / Analyst in the sidebar. Document, report and CLI reads follow the demo role. Fixtures are not secure storage.
-- **Agents:** `funds add --json=examples/candidate.json`, `screening get`, `records list|get`; see [agent instructions](AGENT_DEMO.md).
-- **Monitoring:** deterministic NAV freshness checks create research assignments without duplicates.
-- **Fees:** Actual/365 management fee reconciliation from approved records, with human review of discrepancies.
+Technical IDs remain stable for CLI use but are hidden under technical details in normal screens. All activity provides the cross-fund history; demo explanations and the agent console are under Presenter tools.
 
-The current rehearsal sequence is in the new walkthrough. The longer original script below remains useful for the existing Book and Silk River flows.
+The CLI can add candidates, read approved records and submit reports; see [agent instructions](AGENT_DEMO.md). Roles and workflows are illustrative. Browser work resets on refresh. PDF assets are actual files. These changes are local until deployed; the public site may show an earlier version.
+
+The older walkthrough below documents the prior interface. Use the linked current walkthrough when rehearsing this version.
 
 **[Open the public demo](https://longhuiberkeley.github.io/apex-pacific-pms/)** ·
 **[Presenter practice sheet](DEMO_PRACTICE.md)**

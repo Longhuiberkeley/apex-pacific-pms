@@ -39,11 +39,11 @@ export default function StatusBar() {
       </span>
       {sep}
       <button onClick={() => setView('today')} className="hover:underline">
-        Open <span className="font-mono tabular-nums">{approvals}</span>
+        Awaiting review <span className="font-mono tabular-nums">{approvals}</span>
       </button>
       {sep}
       <button onClick={() => openFund(sable?.id ?? 'SAB')} className="hover:underline">
-        Worst NAV <span className="font-mono tabular-nums">{w.age}d</span> {w.name.split(' ')[0]}
+        Oldest NAV <span className="font-mono tabular-nums">{w.age}d</span> {w.name.split(' ')[0]}
       </button>
     </div>
   );

@@ -1,21 +1,17 @@
-import Fees from './components/Fees';
-import Monitoring from './components/Monitoring';
-import DataLibrary from './components/DataLibrary';
-import Screening from './components/Screening';
+import Funds from './components/Funds';
+import TodayWorkspace from './components/TodayWorkspace';
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { useStore, openApprovals, worstNav, CASH_YTD } from './lib/store';
 import { validateBook, weightedYtd } from './lib/rules';
 import Rail from './components/Rail';
 import StatusBar from './components/StatusBar';
-import Today from './components/Today';
 import FundPage from './components/FundPage';
 import ModulesSheet from './components/ModulesSheet';
 import Login from './components/Login';
 import Portfolio from './components/Portfolio';
 import Shell from './components/Shell';
 import Palette from './components/Palette';
-import Team from './components/Team';
 import Assignment from './components/Assignment';
 import { startAgentBridge } from './lib/agentBridge';
 import { AuditDrawer, DdqExport, EntityAudit } from './components/Drawers';
@@ -106,14 +102,10 @@ export default function App() {
                 view === 'today' || view === 'fund' ? 'overflow-hidden' : 'overflow-y-auto px-6 py-5'
               } ${shellOpen ? (view === 'today' || view === 'fund' ? 'pb-[42vh]' : 'pb-[46vh]') : ''}`}
             >
-              {view === 'today' && <Today />}
+              {view === 'today' && <TodayWorkspace />}
               {view === 'book' && <Portfolio />}
               {view === 'fund' && <FundPage />}
-              {view === 'team' && <Team />}
-              {view === 'fees' && <Fees key={identity.role} />}
-              {view === 'monitoring' && <Monitoring />}
-              {view === 'screening' && <Screening />}
-              {view === 'library' && <DataLibrary key={identity.role} />}
+              {view === 'funds' && <Funds />}
             </main>
           </div>
           <AuditDrawer />

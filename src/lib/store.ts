@@ -87,9 +87,13 @@ export const SILK = 'SIL';
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
 
 interface State {
+  operationsSection: 'reporting' | 'fees';
+  setOperationsSection: (section: 'reporting' | 'fees') => void;
+  todayMode: 'mine' | 'team' | 'intake';
+  setTodayMode: (mode: 'mine' | 'team' | 'intake') => void;
   feeReviews: FeeReview[];
   approveFee: (inputs: FeeInputs, note: string) => WorkResult;
-  runMonitoring: () => void;
+  runMonitoring: (fundId?:string) => void;
   records: ApprovedRecord[];
   librarySelection: string | null;
   openRecord: (id: string) => void;
@@ -193,6 +197,10 @@ interface State {
 }
 
 export const useStore = create<State>((set, get) => ({
+  operationsSection: 'reporting',
+  setOperationsSection: (operationsSection) => set({operationsSection}),
+  todayMode: 'mine',
+  setTodayMode: (todayMode) => set({todayMode,view:'today'}),
   feeReviews: [],
   approveFee: (inputs,note) => {
     const who = get().identity;
@@ -202,15 +210,15 @@ export const useStore = create<State>((set, get) => ({
     if (!result.ok) return {ok:false,message:result.error};
     if (result.needsReview && !note.trim()) return {ok:false,message:'Explain the discrepancy before approval.'};
     const duplicate = get().feeReviews.find(r=>JSON.stringify(r.inputs)===JSON.stringify(inputs) && r.note===note.trim());
-    if (duplicate) return {ok:true,message:`Already saved as ${duplicate.id}.`};
+    if (duplicate) return {ok:true,message:'This reconciliation has already been saved.'};
     const record: FeeReview={id:`FEE-${get().feeReviews.length+1}`,inputs:structuredClone(inputs),expected:result.expected,variance:result.variance,days:result.days,note:note.trim(),reviewer:who.name,at:now(),sources:sources.map(r=>r!.id),access:'PM'};
     set(s=>({feeReviews:[...s.feeReviews,record]}));
     get().pushAudit('YOU', `Approved reconciliation ${record.id}`, 'PM-only reconciliation saved; no payment sent', 'HAL');
-    return {ok:true,message:`Saved ${record.id}. Original source records remain attached.`};
+    return {ok:true,message:'Reconciliation saved with its approved source records.'};
   },
-  runMonitoring: () => {
+  runMonitoring: (fundId) => {
     if (!get().identity) return;
-    const breaches=get().funds.filter(f=>!f.asOf || daysSince(f.asOf)>30);
+    const breaches=get().funds.filter(f=>(!fundId||f.id===fundId)&&(!f.asOf || daysSince(f.asOf)>30));
     const next=breaches.filter(f=>!get().assignments.some(a=>a.id===`MON-${f.id}`)).map(f=>({id:`MON-${f.id}`,fundId:f.id,title:`Investigate NAV freshness: ${f.name}`,owner:'L. Wu',reviewer:'A. Chan',due:'2026-09-08',mode:'type2' as const,status:'Assigned' as const,brief:`The latest NAV is dated ${f.asOf ?? 'unknown'} (${daysSince(f.asOf)} days old). The freshness limit is 30 days. Determine the reason and recommend follow-up. Research acceptance cannot clear this numerical breach.`,deliverables:['Verified cause and evidence','Impact on liquidity and valuation confidence','Recommended action and unresolved questions'],sources:[{id:`${f.id}-FRESHNESS`,title:'NAV freshness check',excerpt:`Computed on 7 September 2026: NAV date ${f.asOf}; age ${daysSince(f.asOf)} days; limit 30 days. Source: existing approved fund record.`}],revisions:[],next:'PM reviews the investigation and Operations receives the follow-up conditions.'}));
     set(s=>({assignments:[...s.assignments,...next]}));
     get().pushAudit('ENGINE', 'NAV freshness checks completed', `${breaches.length} breaches; ${next.length} investigations created`);
@@ -218,7 +226,12 @@ export const useStore = create<State>((set, get) => ({
   },
   records: EXTRA_DOCS.map(d => makeRecord(d, 'A. Chan', d.arrived)),
   librarySelection: null,
-  openRecord: (librarySelection) => set({ librarySelection, view: 'library' }),
+  openRecord: (librarySelection) => {
+    if (!librarySelection) { set({librarySelection:null}); return; }
+    const record=get().records.find(r=>r.id===librarySelection);
+    if (!record || !canRead(get().identity,record)) return;
+    set(record.fundId ? {librarySelection,view:'fund',fundId:record.fundId,fundTab:'documents'} : {librarySelection,view:'today',todayMode:'intake'});
+  },
   criteria: structuredClone(DEFAULT_CRITERIA),
   applyCriteria: (criteria) => {
     if (!get().identity || !validCriteria(criteria)) return;
@@ -232,7 +245,7 @@ export const useStore = create<State>((set, get) => ({
     if (existing) { get().openAssignment(existing.id); return; }
     const id = `RESEARCH-${fundId}`;
     const result = evaluate(fund.metrics, get().criteria);
-    const sources = [{ id: `${fundId}-SCREEN`, title: 'Screening snapshot', excerpt: `${fund.metricSource ?? 'No evidence supplied'}; as of ${fund.metricAsOf ?? 'unknown'}. ${JSON.stringify(result)}` }];
+    const sources = [{ id: `${fundId}-SCREEN`, title: 'Screening snapshot', excerpt: `${fund.metricSource ?? 'No evidence supplied'}; as of ${fund.metricAsOf ?? 'unknown'}. ${result.checks.map(c=>`${c.label}: ${c.value??'not supplied'} ${c.unit}; ${c.status}`).join('. ')}` }];
     const assignment: Assignment = { id, fundId, title: `Investigate ${fund.name}`, owner: 'L. Wu', reviewer: 'A. Chan', due: '2026-09-14', mode: 'type2', status: 'Assigned', brief: `Screening: ${result.status}. Assess strategy robustness, team continuity, liquidity alignment and operational controls. Explain missing evidence and distinguish manager claims from verified facts.`, deliverables: ['Evidence-backed findings', 'Uncertainties and risks', 'Recommendation and follow-up conditions'], sources, revisions: [], next: 'Analyst submits findings; PM reviews and assigns diligence follow-up.' };
     set(s => ({ assignments: [...s.assignments, assignment], assignmentId: id }));
     get().pushAudit('ENGINE', `Created ${id}`, 'Screening snapshot attached; human research required', fundId);
@@ -273,7 +286,7 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({ assignments: s.assignments.map((x) => x.id === id ? { ...x, draft: checked.content, status: 'Needs review', revisions: [...x.revisions, revision] } : x) }));
     get().pushAudit(via === 'form' ? 'YOU' : 'AGENT', `submitted ${id} v${revision.version} by ${by}`, `Schema and source IDs checked · awaiting ${a.reviewer}`, a.fundId, { field: 'research.submission', from: a.status, to: 'Needs review', source: id });
     get().emitCmd(`tasks submit ${id} --json=research.json`, via);
-    return { ok: true, message: `${id} v${revision.version} submitted. Awaiting ${a.reviewer}; portfolio unchanged.` };
+    return { ok: true, message: `Research submitted for ${a.reviewer} to review. Portfolio unchanged.` };
   },
   reviewResearch: (id, decision, note) => {
     const a = get().assignments.find((a) => a.id === id);
@@ -301,7 +314,7 @@ export const useStore = create<State>((set, get) => ({
     get().pushAudit('YOU', `${decision} ${id} v${latest.version} — ${who.name}`, a.access === 'PM' ? 'Restricted review recorded' : note.trim(), a.fundId, { field: 'research.decision', from: 'Needs review', to: decision, source: id });
     get().emitCmd(`tasks review ${id} --decision="${decision}"`, 'form');
     if (decision === 'accepted') get().pushAudit('ENGINE', `created ${nextId} → M. Lee`, `Conditions copied from ${id}; ${id === 'A-101' ? 'Silk River moved to diligence' : 'follow-up assigned'}`, a.fundId);
-    return { ok: true, message: decision === 'accepted' ? `Accepted. ${nextId} assigned to Operations with the review conditions.` : 'Returned to the analyst. The previous submission and review are retained.', ...(decision === 'accepted' ? { nextId } : {}) };
+    return { ok: true, message: decision === 'accepted' ? 'Accepted. Operations has a follow-up assignment containing the review conditions.' : 'Returned to the analyst. The previous submission and review are retained.', ...(decision === 'accepted' ? { nextId } : {}) };
   },
   identity: null,
   tab: 'ops',
@@ -362,12 +375,15 @@ export const useStore = create<State>((set, get) => ({
       view: tab === 'construct' ? 'book' : tab === 'dd' ? 'fund' : 'today',
       ...(tab === 'dd' ? { fundId: get().ddSel } : {}),
     }),
-  setView: (view) =>
-    set({
-      view,
-      tab: view === 'book' ? 'construct' : view === 'fund' ? 'dd' : 'ops',
-    }),
-  openFund: (id) => set({ view: 'fund', fundId: id, fundTab: 'overview', ddSel: id, tab: 'dd' }),
+  setView: (view) => {
+    if (view==='team') { set({view:'today',todayMode:'team'}); return; }
+    if (view==='library') { set({view:'today',todayMode:'intake',librarySelection:null}); return; }
+    if (view==='screening') { set({view:'funds'}); return; }
+    if (view==='fees') { set({view:'fund',fundId:'HAL',fundTab:'operations',operationsSection:'fees'}); return; }
+    if (view==='monitoring') { set({view:'fund',fundId:get().fundId ?? 'SAB',fundTab:'operations',operationsSection:'reporting'}); return; }
+    set({view,tab:view==='book'?'construct':view==='fund'?'dd':'ops'});
+  },
+  openFund: (id) => set({ view: 'fund', fundId: id, fundTab: 'overview', operationsSection: 'reporting', librarySelection: null, ddSel: id, tab: 'dd' }),
   setFundTab: (fundTab) => set({ fundTab }),
   setIntakePolicy: (p) => {
     const prev = get().intakePolicy;
@@ -388,14 +404,14 @@ export const useStore = create<State>((set, get) => ({
     if (!staged) return;
     if (identity?.role !== 'PM') {
       get().pushAudit('YOU', `BLOCKED approve attempt by ${identity?.name ?? 'unknown'} (Analyst) — PM signature required`);
-      toast.error('BLOCKED — PM signature required', { description: 'apex book approve  # human-only lever' });
+      toast.error('Portfolio manager approval required');
       return;
     }
     // Defense-in-depth: validate at commit, not just via disabled button.
     const violations = validateBook(staged, funds);
     if (violations.length > 0) {
       get().pushAudit('ENGINE', `BLOCKED commit — invariants failing`, violations.map((v) => v.msg).join(' | '), 'PORT');
-      toast.error('BLOCKED — invariants failing at commit');
+      toast.error('Resolve the portfolio limit issues before approval');
       return;
     }
     const rid = 'R-' + String(ridN++).padStart(4, '0');
@@ -430,7 +446,7 @@ export const useStore = create<State>((set, get) => ({
     });
     get().pushAudit('YOU', `APPROVED allocation ticket #${ticket + 1} as ${identity.name} (PM) — filed ${rid}`, 'weights committed · 90-day clock', 'PORT');
     get().emitCmd(`book approve --ticket=${ticket + 1}`, 'form');
-    toast.success(`committed — ticket #${ticket + 1} filed ${rid}`, { description: `apex book approve --ticket=${ticket + 1}` });
+    toast.success('Allocation approved', {description:'Operations has received the instruction-review assignment.'});
   },
   setWeight: (id, wt) => {
     if (!Number.isFinite(wt)) return;
@@ -507,7 +523,7 @@ export const useStore = create<State>((set, get) => ({
     }));
     get().pushAudit('YOU', `APPROVED ${q.wid} — filed ${rid}`, detail, q.wid);
     get().emitCmd(`today approve ${q.wid}`, 'form');
-    toast.success(`signed & filed ${rid}`, { description: `apex today approve ${q.wid}` });
+    toast.success('Review approved and saved');
   },
 
   rejectQueue: (i, reason, note = '') => {
@@ -518,7 +534,7 @@ export const useStore = create<State>((set, get) => ({
     set({ queue: nq });
     get().pushAudit('YOU', `REJECTED ${q.wid} — ${reason}`, note, q.wid);
     get().emitCmd(`today reject ${q.wid}`, 'form');
-    toast.message(`rejected ${q.wid}`);
+    toast.message('Item returned without approval');
   },
 
   approveDoc: (id) => {
@@ -550,7 +566,7 @@ export const useStore = create<State>((set, get) => ({
       source: doc.id,
     });
     get().emitCmd(`docs approve ${id}`, 'form');
-    toast.success('Approved record saved', { description: record.id, action: { label: 'View saved record', onClick: () => get().openRecord(record.id) } });
+    toast.success('Approved record saved', { description: record.title, action: { label: 'View saved record', onClick: () => get().openRecord(record.id) } });
   },
 
   rejectDoc: (id, reason, note = '') => {
@@ -602,7 +618,7 @@ export const useStore = create<State>((set, get) => ({
     }));
     get().pushAudit('ENGINE', 'reconciliation breaks queued → Today (fee_delta, unexpected_fx)', '', 'MONDAY');
     get().emitCmd('ops queue-fx --break=unexpected_fx', 'form');
-    toast.success('FX break queued → Today', { description: 'apex ops queue-fx --break=unexpected_fx' });
+    toast.success('FX discrepancy added to Today for review');
   },
   escalateSable: () => {
     if (get().escalated) return;
@@ -618,7 +634,7 @@ export const useStore = create<State>((set, get) => ({
       source: wid,
     });
     get().emitCmd('ops escalate SAB --to=monitor', 'form');
-    toast.success('escalated → Today', { description: 'apex ops escalate SAB --to=monitor' });
+    toast.success('Follow-up added to Today');
   },
   parseBroker: () => {
     set({ brokerParsed: true });
@@ -750,7 +766,7 @@ export const useStore = create<State>((set, get) => ({
       source: rid,
     });
     get().emitCmd('ops ack HAL.restatement', 'form');
-    toast.success(`acknowledged — filed ${rid}`, { description: 'apex ops ack HAL.restatement' });
+    toast.success('NAV correction reviewed and saved');
   },
 
   openPack: (id) => {
@@ -794,7 +810,7 @@ export const useStore = create<State>((set, get) => ({
       source: `${vid} ${who?.name ?? ''}`.trim(),
     });
     get().emitCmd(`dd verdict ${fundId} --state=${st}`, 'form');
-    toast.success(`verdict filed ${vid} — ${st} · report ${rid}`, { description: `apex dd verdict ${fundId} --state=${st}` });
+    toast.success('Diligence review recorded', {description:f.name});
   },
 
   setAudit: (b) => set({ auditOpen: b }),

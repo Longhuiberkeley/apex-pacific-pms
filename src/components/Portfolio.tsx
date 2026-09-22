@@ -1,3 +1,4 @@
+import { plainText, RULE_LABEL as RULE_NAMES } from '../lib/language';
 import { useEffect, useMemo, useState } from 'react';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { toast } from 'sonner';
@@ -10,11 +11,11 @@ import { cn } from '../lib/cn';
 import { ModeBadge } from './WorkMode';
 
 const RULE_LABEL: Record<string, string> = {
-  A: 'Rule A — single name ≤ $35.6M (25%)',
-  B: 'Rule B — Equity-hedge sleeve ≤ $49.9M (35%)',
-  C: 'Rule C — liquidity reserve ≥ $14.3M (10%)',
-  D: 'Rule D — Σ dollars = NAV $142.5M',
-  E: 'Rule E — NAV stale > 30d → ≤ $7.1M (5%)',
+  A: 'Single-fund allocation ≤ $35.6M (25%)',
+  B: 'Equity strategy allocation ≤ $49.9M (35%)',
+  C: 'Minimum cash reserve ≥ $14.3M (10%)',
+  D: 'Total allocations must equal NAV $142.5M',
+  E: 'NAV older than 30 days limits allocation to ≤ $7.1M (5%)',
 };
 
 function usdOf(wt: number) {
@@ -66,7 +67,7 @@ function DollarsCell({ usd, pct, hot, onCommit }: { usd: number; pct: number; ho
             'w-[9.5rem] rounded border border-line bg-surface px-1.5 py-1 outline-none hover:border-line2 focus:border-ai focus:shadow-[0_0_0_2px_rgb(33_82_199/0.18)]',
             hot ? 'text-stop' : 'text-ink'
           )}
-          title="cash absorbs the residual — Σ stays 100.0"
+          title="Unallocated capital remains in cash; total allocation stays at 100%"
         />
       </span>
       <span className="font-mono text-[12px] tabular-nums text-muted">{pct.toFixed(1)}%</span>
@@ -118,7 +119,7 @@ export default function Portfolio() {
       }),
       columnHelper.display({
         id: 'usd',
-        header: staged ? '$ proposed' : '$ committed',
+        header: staged ? 'Proposed allocation' : 'Current allocation',
         cell: ({ row }) => {
           const f = row.original;
           const w = live[f.id] ?? 0;
@@ -128,7 +129,7 @@ export default function Portfolio() {
       }),
       columnHelper.display({
         id: 'delta',
-        header: 'Δ staged',
+        header: 'Proposed change',
         cell: ({ row }) => {
           const id = row.original.id;
           if (!staged) return <span className="font-mono text-[12px] text-muted">—</span>;
@@ -162,7 +163,7 @@ export default function Portfolio() {
     stage(live);
     pushAudit('YOU', 'staged proposal — IC gate opened', '', 'PORT');
     emitCmd('book stage --from=edit', 'form');
-    toast.success('staged — IC gate open');
+    toast.success('Proposal ready for review');
   };
 
   const cashWt = live.CASH ?? 0;
@@ -170,13 +171,13 @@ export default function Portfolio() {
 
   return (
     <div className="space-y-3">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h1 className="text-[20px] font-semibold text-ink">Book</h1><ModeBadge mode="deterministic" /></div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h1 className="text-[20px] font-semibold text-ink">Portfolio</h1><ModeBadge mode="deterministic" /></div>
 
       <Card
-        title={staged ? 'Proposed dollars — awaiting PM signature' : 'Committed dollars'}
-        sub={`NAV ${compactUsd(NAV_USD)} · YTD +${ytd.toFixed(2)}pp · Σ ${total.toFixed(1)}%`}
+        title={staged ? 'Proposed dollars — awaiting PM signature' : 'Current allocation dollars'}
+        sub={`NAV ${compactUsd(NAV_USD)} · YTD +${ytd.toFixed(2)}pp · Total ${total.toFixed(1)}%`}
         right={
-          staged ? <Badge tone="amber">Staged — IC gate open</Badge> : <Badge tone="emerald">Committed</Badge>
+          staged ? <Badge tone="amber">Proposal awaiting approval</Badge> : <Badge tone="emerald">Current allocation</Badge>
         }
       >
         <div className="overflow-x-auto rounded-lg border border-line bg-surface">
@@ -225,7 +226,7 @@ export default function Portfolio() {
         {/* A–E verdict strip — the book's own footer, live, deterministic */}
         <div className="mt-4 rounded-lg border border-line bg-paper p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[12px] text-muted">Rules A–E</span>
+            <span className="text-[12px] text-muted">Portfolio limits</span>
             <div className="flex flex-wrap gap-1.5">
               {(['A', 'B', 'C', 'D', 'E'] as const).map((r) => (
                 <span
@@ -236,7 +237,7 @@ export default function Portfolio() {
                     fails.has(r) ? 'bg-stop/10 text-stop' : 'bg-pass/10 text-pass'
                   )}
                 >
-                  {r} {fails.has(r) ? 'Fail' : 'Pass'}
+                  {RULE_NAMES[r]} · {fails.has(r) ? 'Needs attention' : 'Within limit'}
                 </span>
               ))}
             </div>
@@ -244,22 +245,22 @@ export default function Portfolio() {
 
           <div className={cn('mt-2.5 whitespace-pre-wrap rounded-md border p-3 font-mono text-[12px] leading-relaxed', viol.length ? 'border-stop/40 bg-stop/10 text-stop' : 'border-pass/40 bg-pass/10 text-pass')}>
             {viol.length
-              ? `BLOCKED\n${viol.map((v) => v.msg).join('\n')}`
-              : `Validated — NAV $142.5M · A–E pass`}
+              ? `Resolve before approval\n${viol.map((v) => plainText(v.msg)).join('\n')}`
+              : `All portfolio limits pass · NAV $142.5M`}
           </div>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             {!staged ? (
-              <Btn tone="emerald" onClick={stageProposal}>Stage proposal</Btn>
+              <Btn tone="emerald" onClick={stageProposal}>Prepare proposal</Btn>
             ) : (
               <>
-                <Btn tone="emerald" onClick={approveGate} disabled={viol.length > 0 || identity?.role !== 'PM'}>Approve — IC {identity?.role !== 'PM' ? '(PM only)' : ''}</Btn>
+                <Btn tone="emerald" onClick={approveGate} disabled={viol.length > 0 || identity?.role !== 'PM'}>Approve allocation {identity?.role !== 'PM' ? '(PM only)' : ''}</Btn>
                 <Btn onClick={clearStage}>Discard</Btn>
               </>
             )}
             <Btn size="sm" onClick={() => pasteAgentProposal('form')}>Paste agent proposal</Btn>
-            {gateOpen && viol.length === 0 && <span className="text-[12px] text-pass">Gate open — PM signature commits</span>}
-            {gateOpen && viol.length > 0 && <span className="text-[12px] text-stop">Gate held — fix the red rows or discard</span>}
+            {gateOpen && viol.length === 0 && <span className="text-[12px] text-pass">Ready for portfolio manager approval</span>}
+            {gateOpen && viol.length > 0 && <span className="text-[12px] text-stop">Resolve the highlighted issues before approval</span>}
           </div>
         </div>
       </Card>

@@ -9,9 +9,9 @@ export const PEOPLE = [
   { name: 'M. Lee', initials: 'ML', role: 'Operations', focus: 'Documents, cash & administrator follow-ups' },
 ];
 export const MODE = {
-  deterministic: { label: 'Deterministic', short: 'Code', detail: 'Fixed rules, arithmetic and workflow transitions. No model needed.' },
-  type1: { label: 'Type 1 · AI feature', short: 'Type 1', detail: 'The workflow invokes AI to read a document. Structured fields enter software checks and human review.' },
-  type2: { label: 'Type 2 · Agent task', short: 'Type 2', detail: 'An analyst or external agent chooses how to research. It submits a structured deliverable; a person decides what happens next.' },
+  deterministic: { label: 'Automatic checks', short: 'Automatic', detail: 'Fixed rules, arithmetic and workflow transitions. No model needed.' },
+  type1: { label: 'AI document extraction', short: 'AI extraction', detail: 'The workflow invokes AI to read a document. Structured fields enter software checks and human review.' },
+  type2: { label: 'Agent research', short: 'Agent research', detail: 'An analyst or external agent chooses how to research. It submits a structured deliverable; a person decides what happens next.' },
 };
 
 export const SubmissionSchema = z.object({

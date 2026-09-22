@@ -1,34 +1,44 @@
-# Analyst workflow walkthrough
+# Fund workflow walkthrough
 
-All examples are fictional. Start `npm run dev`, then use the printed Network URL (currently http://192.168.28.193:5199/) and Skip MFA. The sidebar role selector switches PM / Analyst. Each browser has separate state. Refresh resets edits, records, candidates and submissions.
+All examples are fictional. Start `npm run dev`, then use the printed Network URL (currently http://192.168.28.193:5199/) and Skip MFA. The sidebar switches PM / Analyst. Each browser has separate state; refresh resets work.
 
-## 1. Prepare the shortlist
+## Where to go
 
-Open Screening. There are 16 new illustrative candidates alongside the existing pipeline. Inspect Dovetail Equity (C-004), which passes the default numerical checks. Change Annualized return from 11 to 14.5: it leaves the eligible group. Restore defaults, then Apply settings if changes remain. Open Dovetail’s research assignment.
+- **Today:** My work for reviews and assigned follow-ups, Team work for the shared work board, Document intake for incoming files and firm-level invoices.
+- **Funds:** Candidates / Invested / All. Compare candidate screening results here; open a fund for the actual research, evidence and decisions.
+- **Portfolio:** allocations, limits and investment approvals.
 
-Say: “Code checks every supplied metric. Missing evidence stays visible. The analyst decides whether the strategy and evidence justify further work.”
+Each fund has Overview, Research & diligence, Documents & data, Operations, and Activity. Operations contains Reporting & monitoring and Management fees. All activity is a secondary workspace view. Presenter tools contains the demo explanation, CLI console and this guide.
 
-Load prepared AI research, inspect the source snapshot, and edit Conditions & follow-up. Submit for review. As PM, request changes or accept with a note. Open the follow-up: the analyst’s conditions and PM’s instruction are already there. No investment has been made.
+The original internal IDs still work in the CLI. They are tucked under technical details in the human interface.
 
-## 2. Agree the data, preserve the original
+## 1. Compare candidates, then investigate one fund
 
-Open Data library → Original files → PacificFundServices_September_Invoice.pdf. Show the mailbox, filename and raw-file path. Switch between Annotated review and Original PDF; open/download the actual PDF if useful.
+Open Funds → Candidates. Select Dovetail Equity, which passes the default checks. Change Annualized return from 11 to 14.5: it leaves the eligible group. Restore defaults and apply settings if needed.
 
-Correct the proposed GL classification to `6200-Administration`. Click Approve & save record, then View saved record in the notification. The library shows typed values, human corrections, source references and the reviewer. Expand the JSON. Click the source link to return to the unchanged document.
+Open Fund record → Research & diligence. Inspect the screening evidence, then open its research assignment. Load prepared research, inspect sources, and edit Conditions & follow-up. Submit for review. As PM, request changes or accept with a note. The next assignment carries the analyst’s conditions and your instruction. No investment has been made.
 
-Say: “We approve these reviewed values into the structured record. The original PDF remains evidence. The saved record can now feed calculations and other workflows.”
+Say: “Code does the comparison. The analyst checks the evidence and adds judgment. The reviewer decides what happens next.”
 
-Records are session state, not a persistent database. PDF files are real downloadable fixture assets. The annotated review is a matching HTML rendition.
+## 2. Review evidence and save the agreed data
 
-## 3. Show who can see what
+Open Halcyon → Documents & data → Harborline_August_NAV.pdf. Show the source mailbox, filename and original-file path. Switch between Annotated review and Original PDF. Approve & save record, then View saved record. The saved values, reviewer and source references remain inside Halcyon’s fund record.
 
-As PM, open Halcyon management fee terms or the manager reference note. Switch the sidebar role to Analyst: restricted originals and records disappear, leaving generic markers. Team’s confidential reference assignment is also hidden. `docs get private-reference`, `records get DATA-terms-hal`, and `tasks get PM-REF` are refused in the analyst agent console. Switch to PM to restore access.
+For a correction example, use Today → Document intake → PacificFundServices_September_Invoice.pdf. Change the proposed expense classification to `6200-Administration`. Approve it and open the saved record. This firm-level invoice remains in intake because it has not been assigned to a fund.
 
-These are application-level demo permissions. Static fixtures are not secure storage.
+Say: “We approve these values into the fund’s structured records. The original PDF remains our evidence.”
 
-## 4. Let an external agent contribute
+PDF assets are real files. The annotated review is a matching HTML rendition. Saved structured records are browser-session state, not a persistent database.
 
-Keep the browser open. From any assignment’s Agent access / CLI tab, copy the APEX_URL and APEX_SESSION exports. In this project directory:
+## 3. Show access restrictions
+
+As PM, open Halcyon’s management fee terms under Documents & data. Switch to Analyst: a generic restricted-document marker replaces it. The approved terms and fee worksheet are also restricted. Silk River’s confidential reference assignment is hidden from the analyst’s work views and CLI.
+
+In the agent console, `docs get private-reference`, `records get DATA-terms-hal`, and `tasks get PM-REF` are refused as Analyst. Switch to PM to restore access. These are application-level demo restrictions, not secure storage of static fixtures.
+
+## 4. External agent contribution
+
+Open any assignment → Agent access / CLI and copy APEX_URL and APEX_SESSION. From this directory:
 
 ```bash
 node scripts/apex.mjs funds add --json=examples/candidate.json
@@ -38,26 +48,30 @@ node scripts/apex.mjs tasks get RESEARCH-<returned-fund-id>
 node scripts/apex.mjs tasks submit RESEARCH-<returned-fund-id> --json=/tmp/research.json
 ```
 
-Give OpenCode or Claude Code `AGENT_DEMO.md` for the exact report contract. Both candidates appear without refreshing. The report enters the same human review workflow. Duplicate names are rejected; if a command times out, read the current state before retrying.
+Give OpenCode or Claude Code `AGENT_DEMO.md` for the report contract. New candidates appear in Funds without refresh; their reports enter the same fund assignment and Today review queue. Duplicate names are rejected. After a timeout, read current state before retrying a write.
 
-The browser transport is live; built-in research and extraction are prepared examples. The app does not call a model.
+The transport is live; built-in research and extraction are prepared examples. The app does not invoke a model.
 
-## 5. Investigate a daily exception
+## 5. Resolve a reporting exception
 
-Open Monitoring → Run checks & create investigations. Sable’s 38-day-old NAV breaches the 30-day threshold. Open its assignment, load prepared research, edit and submit. As PM, accept with “Obtain the overdue administrator pack and verify the valuation date.” Open the resulting Operations task.
+Open Sable Creek → Operations → Reporting & monitoring. Its 38-day-old NAV exceeds the 30-day limit. Check reporting & assign follow-up, then open the investigation. Alternatively, Today’s overdue Sable alert opens that same investigation.
 
-The breach remains visible because a reviewed explanation does not replace missing data. Running checks again does not duplicate the investigation.
+Prepare the findings, edit and submit. As PM, accept with “Obtain the overdue administrator pack and verify the valuation date.” The next Operations task inherits the instruction. The numerical issue remains until underlying data resolves it. Repeating the check does not duplicate the investigation.
 
-## 6. Reconcile fees
+## 6. Reconcile a management fee
 
-First approve the Halcyon NAV extraction from Today or Data library. As PM, open Fees. The NAV, terms and invoice links point to approved structured records.
+After approving Halcyon’s NAV, open Halcyon → Operations → Management fees as PM. All three source links open approved records within Halcyon.
 
-The August example uses $17.1M × 1.44% × 31 / 365 = $20,913.53. Against a $22,500 invoice, the variance is $1,586.47. Edit a proposed rate or date to show recalculation. Restore approved inputs; enter a discrepancy explanation and approve the reconciliation. Expand the saved result to show inputs, sources and reviewer. No payment is sent.
+The August example calculates $17.1M × 1.44% × 31 / 365 = $20,913.53. Against a $22,500 invoice, the variance is $1,586.47. Edit a proposed rate or date, then restore approved inputs. Explain the discrepancy and approve. Expand the saved reconciliation for its calculation and reviewer; JSON is under Technical details.
 
-The worksheet uses constant NAV and Actual/365. It does not implement incentive fees or changing daily balances.
+The worksheet uses constant NAV and Actual/365. No payment is sent; incentive fees are outside this example.
+
+## 7. Review the history
+
+Open the fund’s Activity tab. It names the event and whether a team member, AI assistant or the system performed it. Internal field names, IDs and checksums are under Technical details. All activity shows the same events across funds and links back to each fund.
 
 ## Verification
 
-`npm run build` validates TypeScript and the production bundle. `scripts/verify-demo.mjs` runs behavioral checks and 1280×720 / 1920×1080 layout checks using a temporary Chrome debugging session on port 9333 and Vite on 5199. It uses only Node’s built-in APIs and leaves screenshots under `/tmp/apex-*.png`.
+`npm run build` validates TypeScript and the production bundle. `node scripts/verify-demo.mjs` runs behavioral, navigation, language and 1280×720 / 1920×1080 layout checks through a temporary Chrome debugging session on port 9333 with Vite on 5199. Screenshots go to `/tmp/apex-*.png`.
 
-Run the suite against a temporary browser profile; it changes and resets that browser’s demo state. `python3 scripts/make-demo-pdfs.py` regenerates the fictional PDF fixtures without third-party libraries.
+Use a temporary browser profile: the suite changes and resets that browser’s demo state. `python3 scripts/make-demo-pdfs.py` regenerates the PDF fixtures without third-party libraries.
