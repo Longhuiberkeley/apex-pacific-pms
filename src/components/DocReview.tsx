@@ -1,3 +1,6 @@
+import { useStore } from '../lib/store';
+import { canRead, provenance, rawUrl } from '../lib/records';
+import { Btn } from './Ui';
 import { useEffect, useState } from 'react';
 import { ChevronDown, FileText, Mail } from 'lucide-react';
 import type { DocRecord } from '../lib/types';
@@ -26,6 +29,9 @@ export default function DocReview({
 }) {
   const [active, setActive] = useState<string | null>(doc.fields[0]?.key ?? null);
   const [reasoning, setReasoning] = useState(true);
+  const [original, setOriginal] = useState(false);
+  const identity = useStore(s=>s.identity);
+  const openRecord = useStore(s=>s.openRecord);
 
   useEffect(() => {
     setActive(doc.fields[0]?.key ?? null);
@@ -51,6 +57,8 @@ export default function DocReview({
   const errors = documentErrors(doc);
   const Icon = doc.kind === 'email' ? Mail : FileText;
 
+  if (!canRead(identity, doc)) return <p className="p-5 text-sm">Restricted document · PM access required</p>;
+  const location = provenance(doc);
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="shrink-0 border-b border-line px-4 py-3">
@@ -60,6 +68,7 @@ export default function DocReview({
               <Icon size={14} className="shrink-0 text-muted" />
               <h2 className="text-[15px] font-semibold text-ink">{doc.title}</h2>
             </div>
+            <p className="mt-1 break-all text-[12px] text-muted">{location.mailbox} → {location.filename}</p><p className="text-[12px] text-muted">{location.rawPath} · Original retained unchanged</p>
             <div className="mt-2"><ModeBadge mode="type1" /></div>
             <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
               <span>{fromName(doc.from)}</span>
@@ -87,9 +96,12 @@ export default function DocReview({
         </div>
       </header>
 
+      <div className="flex flex-wrap items-center gap-3 border-b border-line bg-surface px-4 py-2 text-xs">
+        {doc.kind === 'pdf' && <><button onClick={()=>setOriginal(false)} className={!original?'font-semibold text-ai':''}>Annotated review</button><button onClick={()=>setOriginal(true)} className={original?'font-semibold text-ai':''}>Original PDF</button><span>Page 1 of 1</span><a className="text-ai" href={rawUrl(location.rawPath)} target="_blank" rel="noreferrer">Open PDF ↗</a><a className="text-ai" href={rawUrl(location.rawPath)} download={location.filename}>Download</a></>}
+      </div>
       <div className="flex min-h-0 flex-1">
         <div className="w-[48%] overflow-auto border-r border-line bg-paper p-4 2xl:w-[55%]">
-          <DocOriginal doc={doc} activeKey={active} onActivate={setActive} />
+          {original && doc.kind === 'pdf' ? <iframe title={location.filename} src={rawUrl(location.rawPath)} className="h-full min-h-[500px] w-full border-0"/> : <><DocOriginal doc={doc} activeKey={active} onActivate={setActive} /><p className="mt-3 text-center text-xs text-muted">{location.filename} · {doc.kind === 'pdf' ? '1 / 1' : 'Original message'}</p></>}
         </div>
         <div className="flex w-[52%] min-w-0 flex-col overflow-auto 2xl:w-[45%]">
           <table className="w-full table-fixed border-collapse text-[13px]">
@@ -97,7 +109,7 @@ export default function DocReview({
             <thead>
               <tr className="text-left text-[12px] text-muted">
                 <th className="h-10 bg-paper px-3 font-medium">Field</th>
-                <th className="h-10 bg-paper px-3 font-medium">Value</th>
+                <th className="h-10 bg-paper px-3 font-medium">{doc.status === 'pending' ? 'Draft value' : 'Reviewed value'}</th>
                 <th className="h-10 bg-paper px-3 font-medium">Conf</th>
               </tr>
             </thead>
@@ -118,7 +130,7 @@ export default function DocReview({
                         human ? 'border-l-4 border-ink' : 'border-l-4 border-ai'
                       )}
                     >
-                      <div className="text-ink">{f.label}</div>
+                      <div className="text-ink">{f.label}</div>{['gl_code','alloc_fund_id'].includes(f.key) && <div className="text-[12px] text-muted">Proposed classification</div>}
                       {f.required && f.conf < 0.85 && !human && (
                         <div className="text-[12px] text-stop">Required</div>
                       )}
@@ -127,7 +139,7 @@ export default function DocReview({
                       <input
                         data-field-input={f.key}
                          value={String(f.value)}
-                         readOnly={f.key === 'fee_delta_usd'}
+                         readOnly={doc.status !== 'pending' || f.key === 'fee_delta_usd'}
                         onChange={(e) => onEdit(f.key, e.target.value)}
                         onFocus={() => setActive(f.key)}
                         className="h-7 w-full rounded border border-transparent bg-transparent px-1 font-mono text-[12px] tabular-nums text-ink hover:border-line focus:border-ai focus:outline-none"
@@ -168,14 +180,16 @@ export default function DocReview({
       </div>
 
       {errors.length > 0 && <p role="alert" className="border-t border-line px-4 py-2 text-[12px] text-stop">{errors.join(' ')}</p>}
-      <HitlTriad
+      <div className="border-t border-line bg-paper px-4 py-2 text-xs">{doc.status === 'pending' ? 'Approve the reviewed values below into Data library → Structured records. The original file stays unchanged.' : `Document ${doc.status}. Saved records are read-only.`}</div>
+      {doc.status === 'pending' ? <HitlTriad
+        approveLabel="Approve & save record"
         hotkeys
         wantReject={wantReject}
         onWantRejectConsumed={onWantRejectConsumed}
         onFix={fixAndApprove}
         onApprove={onApprove}
         onReject={onReject}
-      />
+      /> : doc.status === 'approved' ? <div className="p-3"><Btn onClick={()=>openRecord(`DATA-${doc.id}`)}>View saved record</Btn></div> : null}
     </div>
   );
 }

@@ -19,7 +19,8 @@ export default function ModulesSheet() {
   const capitalNotes = useStore((s) => s.capitalNotes);
 
   const hal = funds.find((f) => f.id === 'HAL');
-  const feeDelta = docs.find((d) => d.id === 'hal-nav-08')?.fields.find((f) => f.key === 'fee_delta_usd');
+  const records = useStore(s=>s.records);
+  const feeDelta = records.find(r=>r.docId==='hal-nav-08')?.values.fee_delta_usd;
 
   return (
     <Sheet open={open} onClose={() => setModules(false)} title="Modules" width="w-[480px]">
@@ -94,8 +95,8 @@ export default function ModulesSheet() {
         <div className="px-4 py-3">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-medium text-ink">Fee comparison</div>
-              <div className="mt-0.5 text-[12px] text-muted">Same-period rate comparison in code. Full accrual engine is a future module.</div>
+              <div className="text-[13px] font-medium text-ink">Management fee reconciliation</div>
+              <div className="mt-0.5 text-[12px] text-muted">Actual/365 reconciliation from approved records, with variance review. Incentive fees remain a future module.</div>
             </div>
             <Status live />
           </div>
@@ -104,7 +105,7 @@ export default function ModulesSheet() {
               <div className="text-[12px] text-ink">{hal.name}</div>
               <div className="mt-1 flex items-baseline justify-between gap-3 font-mono text-[12px] tabular-nums">
                 <span className="text-muted">fee_delta_usd</span>
-                <span className="text-ink">{feeDelta ? String(feeDelta.value) : '—'}</span>
+                <span className="text-ink">{feeDelta === undefined ? 'Awaiting approved NAV record' : String(feeDelta)}</span>
               </div>
             </div>
           )}

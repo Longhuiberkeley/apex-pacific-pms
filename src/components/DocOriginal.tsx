@@ -41,7 +41,7 @@ function Paper({ children, className }: { children: React.ReactNode; className?:
   return (
     <div
       className={cn(
-        'relative w-[612px] max-w-full border border-line bg-[#FFFEFA] px-10 py-8 text-[13px] leading-relaxed text-ink shadow-card',
+        'relative min-h-[720px] w-[612px] max-w-full border border-line bg-[#FFFEFA] px-10 py-8 text-[13px] leading-relaxed text-ink shadow-card',
         className
       )}
     >
@@ -226,6 +226,7 @@ export default function DocOriginal({
     <div ref={root} className="flex justify-center">
       {doc.id === 'hal-nav-08' && <HalNav active={activeKey} onAct={onActivate} />}
       {doc.id === 'inv-pfs-q3' && <PfsInvoice active={activeKey} onAct={onActivate} />}
+      {!['hal-nav-08','inv-pfs-q3','eml-mer-0807'].includes(doc.id) && <Paper><h2 className="mb-6 text-lg font-semibold">{doc.title}</h2>{doc.fields.map(f=><div key={f.key} className="border-t border-line py-4"><b>{f.label}</b><p>{String(f.value)}</p></div>)}<p className="mt-12 text-xs text-muted">Fictional demonstration document · September 2026</p></Paper>}
       {doc.id === 'eml-mer-0807' && <MeridianMail active={activeKey} onAct={onActivate} />}
     </div>
   );

@@ -5,6 +5,19 @@
 > entity, document, and number here is invented for a live demo. No real fund, vendor, or data.
 > It is the companion demo for the talk *Entering 2027: A Practical Guide to AI*.
 
+## New local workflow
+
+See [the analyst workflow walkthrough](DEMO_V3_WALKTHROUGH.md) for editable screening, original PDFs → approved structured records, role-based document access, external candidate intake, monitoring investigations and management fee reconciliation. These changes are local until deployed; the public site may show the previous version.
+
+- **Screening:** eight editable checks with per-candidate evidence and research handoff.
+- **Data library:** immutable source files, reviewable drafts and approved typed records. Approval saves a snapshot; refresh resets browser records.
+- **Access:** switch PM / Analyst in the sidebar. Document, report and CLI reads follow the demo role. Fixtures are not secure storage.
+- **Agents:** `funds add --json=examples/candidate.json`, `screening get`, `records list|get`; see [agent instructions](AGENT_DEMO.md).
+- **Monitoring:** deterministic NAV freshness checks create research assignments without duplicates.
+- **Fees:** Actual/365 management fee reconciliation from approved records, with human review of discrepancies.
+
+The current rehearsal sequence is in the new walkthrough. The longer original script below remains useful for the existing Book and Silk River flows.
+
 **[Open the public demo](https://longhuiberkeley.github.io/apex-pacific-pms/)** ·
 **[Presenter practice sheet](DEMO_PRACTICE.md)**
 
@@ -222,7 +235,7 @@ again until a reviewer requests changes.
 - Source-ID checks verify references exist; they do not prove a research conclusion is correct.
 - Data is held in the current browser tab and resets on refresh. Email delivery, document receipt,
   trade execution and multi-user synchronization are not connected.
-- The full fee-accrual engine and LP portal are future modules.
+- Management fee reconciliation is available in Fees. Incentive fees and the LP portal remain future modules.
 
 ## What it shows
 
@@ -269,7 +282,7 @@ npm run dev        # http://localhost:5199/
 - Fallback: `npm run build && npm run preview`
 - **Login:** `a.chan@…` (**PM**) or `l.wu@…` (**Analyst**) — any password, or skip MFA.
 - **LAN:** Vite binds to all interfaces. Use `http://<this-machine-IP>:5199/`.
-- **Demo role:** switch PM / Analyst directly in Team. Refresh resets the in-memory demo.
+- **Demo role:** switch PM / Analyst in the sidebar or Team. Refresh resets the in-memory demo.
 
 ## Agent access (local demo)
 

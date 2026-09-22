@@ -4,6 +4,7 @@ import { Btn } from './Ui';
 import RejectBox from './RejectBox';
 
 export default function HitlTriad({
+  approveLabel = 'Approve',
   onFix,
   onApprove,
   onReject,
@@ -11,6 +12,7 @@ export default function HitlTriad({
   onWantRejectConsumed,
   hotkeys = false,
 }: {
+  approveLabel?: string;
   onFix: () => void;
   onApprove: () => void;
   onReject: (reason: string, note: string) => void;
@@ -65,7 +67,7 @@ export default function HitlTriad({
         Fix and approve
       </Btn>
       <Btn size="sm" tone="emerald" onClick={onApprove}>
-        Approve
+        {approveLabel}
       </Btn>
       <div className="relative">
         <Btn size="sm" tone="crimson" onClick={() => setOpen((v) => !v)}>

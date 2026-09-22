@@ -22,12 +22,13 @@ export const SubmissionSchema = z.object({
   sources: z.array(z.string().trim().min(1)).min(1, 'Cite at least one source ID.').max(20),
 }).strict();
 export type Submission = z.infer<typeof SubmissionSchema>;
-export interface WorkSource { id: string; title: string; excerpt: string }
+export interface WorkSource { access?: import('./records').Access; docId?: string; id: string; title: string; excerpt: string }
 export interface WorkRevision {
   version: number; content: Submission; by: string; via: 'form' | 'shell' | 'cli'; at: string;
   decision?: 'accepted' | 'changes requested'; reviewer?: string; reviewNote?: string; reviewedAt?: string;
 }
 export interface Assignment {
+  access?: import('./records').Access;
   id: string; fundId: string; title: string; owner: string; reviewer: string; due: string;
   mode: WorkMode; status: WorkStatus; brief: string; deliverables: string[]; sources: WorkSource[];
   next: string; blocker?: string; draft?: Submission; revisions: WorkRevision[];

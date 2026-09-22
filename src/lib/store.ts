@@ -1,3 +1,5 @@
+import { canRead, canReadWork, makeRecord, EXTRA_DOCS, type ApprovedRecord } from './records';
+import { DEFAULT_CRITERIA, SCREENING_SEED, evaluate, validCriteria, type Criterion } from './screening';
 import { create } from 'zustand';
 import { toast } from 'sonner';
 import type { AppView, AuditEntry, DocRecord, EntityHistory, Fund, FundTab, Identity, IntakePolicy, LedgerEntry, QueueItem, ScreenerItem, VerdictRecord } from './types';
@@ -8,7 +10,7 @@ import { ddState, openFlags } from './dd';
 import type { Via } from './verbs';
 import { FENCE } from './verbs';
 import { documentErrors } from './docs';
-import { feeAdjustment } from './fees';
+import { feeAdjustment, reconcileFee, type FeeInputs, type FeeReview } from './fees';
 import { ASSIGNMENTS_SEED, SILK_DRAFT, validateSubmission, type Assignment, type Submission, type WorkResult } from './work';
 
 let widN = 7;
@@ -85,6 +87,15 @@ export const SILK = 'SIL';
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
 
 interface State {
+  feeReviews: FeeReview[];
+  approveFee: (inputs: FeeInputs, note: string) => WorkResult;
+  runMonitoring: () => void;
+  records: ApprovedRecord[];
+  librarySelection: string | null;
+  openRecord: (id: string) => void;
+  criteria: Criterion[];
+  applyCriteria: (criteria: Criterion[]) => void;
+  startResearch: (fundId: string) => void;
   assignments: Assignment[];
   assignmentId: string | null;
   openAssignment: (id: string | null) => void;
@@ -162,8 +173,8 @@ interface State {
   assessSable: () => void;
   runRawAgent: () => void;
   agentDemo: () => void;
-  addCandidate: (name: string, via: Via) => { ok: boolean; msg: string; dupId?: string };
-  extractRun: () => { ok: boolean; msg: string; dupId?: string };
+  addCandidate: (name: string, via: Via) => { ok: boolean; msg: string; dupId?: string; id?: string };
+  extractRun: () => { ok: boolean; msg: string; dupId?: string; id?: string };
   triage: (id: string, s: ScreenerItem['status']) => void;
   ackHalcyon: () => void;
   openPack: (id: string | null) => void;
@@ -182,33 +193,77 @@ interface State {
 }
 
 export const useStore = create<State>((set, get) => ({
-  assignments: structuredClone(ASSIGNMENTS_SEED),
+  feeReviews: [],
+  approveFee: (inputs,note) => {
+    const who = get().identity;
+    const sources=['hal-nav-08','terms-hal','fee-invoice-hal'].map(id=>get().records.find(r=>r.docId===id));
+    if (who?.role !== 'PM' || !sources.every(r=>r && canRead(who,r))) return {ok:false,message:'PM access and all approved source records are required.'};
+    const result=reconcileFee(inputs);
+    if (!result.ok) return {ok:false,message:result.error};
+    if (result.needsReview && !note.trim()) return {ok:false,message:'Explain the discrepancy before approval.'};
+    const duplicate = get().feeReviews.find(r=>JSON.stringify(r.inputs)===JSON.stringify(inputs) && r.note===note.trim());
+    if (duplicate) return {ok:true,message:`Already saved as ${duplicate.id}.`};
+    const record: FeeReview={id:`FEE-${get().feeReviews.length+1}`,inputs:structuredClone(inputs),expected:result.expected,variance:result.variance,days:result.days,note:note.trim(),reviewer:who.name,at:now(),sources:sources.map(r=>r!.id),access:'PM'};
+    set(s=>({feeReviews:[...s.feeReviews,record]}));
+    get().pushAudit('YOU', `Approved reconciliation ${record.id}`, 'PM-only reconciliation saved; no payment sent', 'HAL');
+    return {ok:true,message:`Saved ${record.id}. Original source records remain attached.`};
+  },
+  runMonitoring: () => {
+    if (!get().identity) return;
+    const breaches=get().funds.filter(f=>!f.asOf || daysSince(f.asOf)>30);
+    const next=breaches.filter(f=>!get().assignments.some(a=>a.id===`MON-${f.id}`)).map(f=>({id:`MON-${f.id}`,fundId:f.id,title:`Investigate NAV freshness: ${f.name}`,owner:'L. Wu',reviewer:'A. Chan',due:'2026-09-08',mode:'type2' as const,status:'Assigned' as const,brief:`The latest NAV is dated ${f.asOf ?? 'unknown'} (${daysSince(f.asOf)} days old). The freshness limit is 30 days. Determine the reason and recommend follow-up. Research acceptance cannot clear this numerical breach.`,deliverables:['Verified cause and evidence','Impact on liquidity and valuation confidence','Recommended action and unresolved questions'],sources:[{id:`${f.id}-FRESHNESS`,title:'NAV freshness check',excerpt:`Computed on 7 September 2026: NAV date ${f.asOf}; age ${daysSince(f.asOf)} days; limit 30 days. Source: existing approved fund record.`}],revisions:[],next:'PM reviews the investigation and Operations receives the follow-up conditions.'}));
+    set(s=>({assignments:[...s.assignments,...next]}));
+    get().pushAudit('ENGINE', 'NAV freshness checks completed', `${breaches.length} breaches; ${next.length} investigations created`);
+    toast.success(`${next.length} investigations created`,{description:'Existing investigations are not duplicated.'});
+  },
+  records: EXTRA_DOCS.map(d => makeRecord(d, 'A. Chan', d.arrived)),
+  librarySelection: null,
+  openRecord: (librarySelection) => set({ librarySelection, view: 'library' }),
+  criteria: structuredClone(DEFAULT_CRITERIA),
+  applyCriteria: (criteria) => {
+    if (!get().identity || !validCriteria(criteria)) return;
+    set({ criteria: structuredClone(criteria) });
+    get().pushAudit('YOU', 'Applied screening criteria', JSON.stringify(criteria));
+  },
+  startResearch: (fundId) => {
+    const fund = get().screener.find(f => f.id === fundId);
+    if (!fund || !get().identity) return;
+    const existing = get().assignments.find(a => a.fundId === fundId && a.mode === 'type2' && !a.parentId);
+    if (existing) { get().openAssignment(existing.id); return; }
+    const id = `RESEARCH-${fundId}`;
+    const result = evaluate(fund.metrics, get().criteria);
+    const sources = [{ id: `${fundId}-SCREEN`, title: 'Screening snapshot', excerpt: `${fund.metricSource ?? 'No evidence supplied'}; as of ${fund.metricAsOf ?? 'unknown'}. ${JSON.stringify(result)}` }];
+    const assignment: Assignment = { id, fundId, title: `Investigate ${fund.name}`, owner: 'L. Wu', reviewer: 'A. Chan', due: '2026-09-14', mode: 'type2', status: 'Assigned', brief: `Screening: ${result.status}. Assess strategy robustness, team continuity, liquidity alignment and operational controls. Explain missing evidence and distinguish manager claims from verified facts.`, deliverables: ['Evidence-backed findings', 'Uncertainties and risks', 'Recommendation and follow-up conditions'], sources, revisions: [], next: 'Analyst submits findings; PM reviews and assigns diligence follow-up.' };
+    set(s => ({ assignments: [...s.assignments, assignment], assignmentId: id }));
+    get().pushAudit('ENGINE', `Created ${id}`, 'Screening snapshot attached; human research required', fundId);
+  },
+  assignments: [...structuredClone(ASSIGNMENTS_SEED), { id: 'PM-REF', fundId: 'SIL', title: 'Review confidential reference', access: 'PM', owner: 'A. Chan', reviewer: 'A. Chan', due: '2026-09-12', mode: 'type2', status: 'Assigned', brief: 'Assess the reference note and identify independent corroboration needed before diligence proceeds.', deliverables: ['Reference assessment', 'Unresolved questions'], sources: [{id:'REF-SOURCE',docId:'private-reference',access:'PM',title:'Private reference note',excerpt:'Former colleague describes a disciplined escalation process; independently corroborate staffing coverage.'}], revisions: [], next: 'PM reviews the report; follow-up retains the restricted classification.' }],
   assignmentId: null,
   updateWork: (id, status, note) => {
     const a = get().assignments.find((x) => x.id === id);
     const who = get().identity;
-    if (!a || !who || a.mode !== 'deterministic' || a.destination || a.status === 'Done') return { ok: false, message: 'Use the dedicated workflow for this assignment.' };
+    if (!a || !canReadWork(who,a,get().docs) || !who || a.mode !== 'deterministic' || a.destination || a.status === 'Done') return { ok: false, message: 'Use the dedicated workflow for this assignment.' };
     if (!note.trim()) return { ok: false, message: 'Record what happened before updating the task.' };
     set((s) => ({ assignments: s.assignments.map((x) => x.id === id ? { ...x, status, blocker: status === 'Waiting externally' ? note.trim() : undefined, activity: [...(x.activity ?? []), { at: now(), by: who.name, note: note.trim(), status }] } : x) }));
-    get().pushAudit('YOU', `${id} → ${status} by ${who.name}`, note.trim(), a.fundId);
+    get().pushAudit('YOU', `${id} → ${status} by ${who.name}`, a.access === 'PM' ? 'Restricted activity recorded' : note.trim(), a.fundId);
     get().emitCmd(`tasks update ${id} --status="${status}"`, 'form');
     return { ok: true, message: 'Activity saved. Fund documents and investment decisions remain separate records.' };
   },
   openAssignment: (assignmentId) => set({ assignmentId }),
   prepareResearch: (id) => {
     const a = get().assignments.find((a) => a.id === id);
-    if (!a || a.mode !== 'type2' || a.status === 'Done' || a.status === 'Needs review') return;
-    const draft = id === 'A-101' ? structuredClone(SILK_DRAFT) : a.draft;
+    if (!a || !canReadWork(get().identity,a,get().docs) || a.mode !== 'type2' || a.status === 'Done' || a.status === 'Needs review') return;
+    const draft = id === 'A-101' ? structuredClone(SILK_DRAFT) : { recommendation: 'Continue evidence gathering before an investment decision.', rationale: 'The attached screening or monitoring evidence identifies questions for investigation. Strategy robustness, liquidity alignment, team continuity and operational controls still require independent verification.', risks: 'Manager claims and missing evidence may change the assessment. Numerical eligibility alone does not establish investment quality.', conditions: 'Obtain independent records and document unresolved questions for the reviewer.', sources: a.sources.map(s => s.id) };
     if (!draft) return;
     set((s) => ({ assignments: s.assignments.map((a) => a.id === id ? { ...a, draft, status: 'In progress' } : a) }));
     get().pushAudit('AGENT', `prepared research draft for ${id}`, 'Prepared demo response · sources attached · awaiting submission', a.fundId);
     get().emitCmd(`tasks draft ${id} --example`, 'form');
   },
-  saveResearch: (id, draft) => set((s) => ({ assignments: s.assignments.map((a) => a.id === id && a.status !== 'Done' && a.status !== 'Needs review' ? { ...a, draft } : a) })),
+  saveResearch: (id, draft) => set((s) => ({ assignments: s.assignments.map((a) => canReadWork(s.identity,a,s.docs) && a.id === id && a.status !== 'Done' && a.status !== 'Needs review' ? { ...a, draft, access: a.access ?? (a.sources.some(source => source.access === 'PM' || s.docs.some(d=>d.id===source.docId && d.access==='PM')) ? 'PM' : 'team') } : a) })),
   submitResearch: (id, content, via) => {
     const a = get().assignments.find((a) => a.id === id);
     if (!get().identity) return { ok: false, message: 'Sign in to the demo first.' };
-    if (!a) return { ok: false, message: `Assignment ${id} not found.` };
+    if (!a || !canReadWork(get().identity,a,get().docs)) return { ok: false, message: 'Assignment unavailable for this role.' };
     if (a.mode !== 'type2') return { ok: false, message: 'This assignment uses its dedicated document or deterministic workflow.' };
     if (a.status !== 'Assigned' && a.status !== 'In progress') return { ok: false, message: 'This assignment is not accepting a submission. A reviewer must request changes before resubmission.' };
     const checked = validateSubmission(content, a);
@@ -223,7 +278,7 @@ export const useStore = create<State>((set, get) => ({
   reviewResearch: (id, decision, note) => {
     const a = get().assignments.find((a) => a.id === id);
     const who = get().identity;
-    if (!a || a.status !== 'Needs review' || !a.revisions.length) return { ok: false, message: 'No submission awaiting review.' };
+    if (!a || !canReadWork(get().identity,a,get().docs) || a.status !== 'Needs review' || !a.revisions.length) return { ok: false, message: 'No submission awaiting review.' };
     if (who?.role !== 'PM' || who.name !== a.reviewer) return { ok: false, message: `Review is assigned to ${a.reviewer} (PM).` };
     if (!note.trim()) return { ok: false, message: 'Add a review note or the changes you need.' };
     const nextId = `${id}-NEXT`;
@@ -234,16 +289,16 @@ export const useStore = create<State>((set, get) => ({
       owner: 'M. Lee', reviewer: a.reviewer, due: '2026-09-12', mode: 'deterministic', status: 'Assigned',
       brief: `Carry-forward conditions: ${latest.content.conditions}\nReviewer instruction: ${note.trim()}`,
       deliverables: id === 'A-101' ? ['Audited track record', 'Administrator-confirmed redemption terms', 'Independent NAV history'] : ['Response to the review conditions'],
-      sources: a.sources, revisions: [], next: 'Collect the evidence for analyst review. Investment approval remains a separate IC decision.',
+      access: a.access, sources: a.sources, revisions: [], next: 'Collect the evidence for analyst review. Investment approval remains a separate IC decision.',
     };
     set((s) => ({
       assignments: [
         ...s.assignments.map((x) => x.id === id ? { ...x, status: decision === 'accepted' ? 'Done' as const : 'In progress' as const, revisions: x.revisions.map((r, i) => i === x.revisions.length - 1 ? { ...r, decision, reviewNote: note.trim(), reviewer: who.name, reviewedAt: now() } : r) } : x),
         ...(decision === 'accepted' && !s.assignments.some((x) => x.id === nextId) ? [next] : []),
       ],
-      ...(id === 'A-101' && decision === 'accepted' ? { screener: s.screener.map((c) => c.id === 'SIL' ? { ...c, status: 'IN DD' as const } : c) } : {}),
+      ...(decision === 'accepted' ? { screener: s.screener.map((c) => c.id === a.fundId ? { ...c, status: 'IN DD' as const } : c) } : {}),
     }));
-    get().pushAudit('YOU', `${decision} ${id} v${latest.version} — ${who.name}`, note.trim(), a.fundId, { field: 'research.decision', from: 'Needs review', to: decision, source: id });
+    get().pushAudit('YOU', `${decision} ${id} v${latest.version} — ${who.name}`, a.access === 'PM' ? 'Restricted review recorded' : note.trim(), a.fundId, { field: 'research.decision', from: 'Needs review', to: decision, source: id });
     get().emitCmd(`tasks review ${id} --decision="${decision}"`, 'form');
     if (decision === 'accepted') get().pushAudit('ENGINE', `created ${nextId} → M. Lee`, `Conditions copied from ${id}; ${id === 'A-101' ? 'Silk River moved to diligence' : 'follow-up assigned'}`, a.fundId);
     return { ok: true, message: decision === 'accepted' ? `Accepted. ${nextId} assigned to Operations with the review conditions.` : 'Returned to the analyst. The previous submission and review are retained.', ...(decision === 'accepted' ? { nextId } : {}) };
@@ -260,12 +315,12 @@ export const useStore = create<State>((set, get) => ({
   ticket: 0,
   gateOpen: false,
   queue: seedQueue,
-  docs: DOCS_SEED.map((d) => ({ ...d, fields: d.fields.map((f) => ({ ...f })), editedFields: [] })),
+  docs: [...DOCS_SEED, ...EXTRA_DOCS].map((d) => ({ ...d, fields: d.fields.map((f) => ({ ...f })), editedFields: [] })),
   ledger: [{ rid: 'R-0001', title: 'August letters digest — 6 managers', wid: 'W-0001', by: 'Analyst', ts: '09-01 10:12' }],
   audit: seedAudit,
   history: seedHistory,
   verdictLog: [seedVerdicts.KES, seedVerdicts.MER],
-  screener: SCREENER_SEED,
+  screener: [...SCREENER_SEED, ...SCREENING_SEED],
   auditOpen: false,
   shellOpen: false,
   brokerParsed: false,
@@ -297,7 +352,7 @@ export const useStore = create<State>((set, get) => ({
     const e = email.trim().toLowerCase();
     const id: Identity =
       e.startsWith('l.wu') ? { name: 'L. Wu', email, role: 'Analyst' } : { name: 'A. Chan', email, role: 'PM' };
-    set({ identity: id });
+    set({ identity: id, assignmentId: null, librarySelection: null, shellLines: [], shellOpen: false, auditOpen: false, ddqOpen: false, entityAudit: null });
     get().pushAudit('YOU', `signed in as ${id.name} (${id.role})`);
   },
   logout: () => set({ identity: null }),
@@ -468,13 +523,15 @@ export const useStore = create<State>((set, get) => ({
 
   approveDoc: (id) => {
     const doc = get().docs.find((d) => d.id === id);
-    if (!doc || doc.status !== 'pending') return;
+    if (!doc || doc.status !== 'pending' || !canRead(get().identity, doc)) return;
     const errors = documentErrors(doc);
     if (errors.length) { toast.error('Record needs correction', { description: errors.join(' ') }); return; }
+    const record = makeRecord(doc, get().identity!.name, new Date(BASE_MS + Date.now() - BOOT_MS).toISOString());
     const edited = doc.editedFields.length ? `fields_edited ${doc.editedFields.join(',')}` : '';
     get().pushAudit('AGENT', `drafted ${doc.id} — ${doc.title}`, `overall ${(doc.overall * 100).toFixed(0)}%`, doc.fundId ?? doc.id);
     set((s) => ({
       docs: s.docs.map((d) => (d.id === id ? { ...d, status: 'approved' as const } : d)),
+      records: [...s.records.filter(r => r.docId !== id), record],
       assignments: s.assignments.map((a) => a.docId === id ? { ...a, status: 'Done', next: 'Document approved and filed in the shared fund record.' } : a),
     }));
     if (id === 'hal-nav-08') {
@@ -493,12 +550,12 @@ export const useStore = create<State>((set, get) => ({
       source: doc.id,
     });
     get().emitCmd(`docs approve ${id}`, 'form');
-    toast.success(`approved ${doc.title}`, { description: `apex docs approve ${id}` });
+    toast.success('Approved record saved', { description: record.id, action: { label: 'View saved record', onClick: () => get().openRecord(record.id) } });
   },
 
   rejectDoc: (id, reason, note = '') => {
     const doc = get().docs.find((d) => d.id === id);
-    if (!doc || doc.status !== 'pending') return;
+    if (!doc || doc.status !== 'pending' || !canRead(get().identity, doc)) return;
     set((s) => ({
       docs: s.docs.map((d) => (d.id === id ? { ...d, status: 'rejected' as const, rejectReason: reason, rejectNote: note } : d)),
     }));
@@ -514,7 +571,7 @@ export const useStore = create<State>((set, get) => ({
 
   editDocField: (id, key, value) => {
     const doc = get().docs.find((d) => d.id === id);
-    if (!doc || doc.status !== 'pending') return;
+    if (!doc || doc.status !== 'pending' || !canRead(get().identity, doc)) return;
     if (key === 'fee_delta_usd') return;
     const first = !doc.editedFields.includes(key);
     set((s) => ({
@@ -633,22 +690,22 @@ export const useStore = create<State>((set, get) => ({
   addCandidate: (name, via) => {
     const clean = name.trim();
     if (!clean) return { ok: false, msg: 'empty name' };
-    const dup = get().screener.find((c) => norm(c.name) === norm(clean));
+    const dup = [...get().screener, ...get().funds].find((c) => norm(c.name) === norm(clean));
     if (dup) {
       get().pushAudit('ENGINE', `dedupe caught duplicate intake — "${clean}" ≈ ${dup.id} (${dup.name})`, '', dup.id);
       get().emitCmd(`screen add "${clean}"`, via);
       return { ok: false, msg: `dedupe caught — "${clean}" is already on the list as ${dup.id}`, dupId: dup.id };
     }
-    const id = clean.slice(0, 3).toUpperCase() + Math.floor(Math.random() * 90 + 10);
+    const id = `NEW-${crypto.randomUUID().slice(0,8)}`;
     set((s) => ({
       screener: [
-        { id, name: clean, ticker: id, score: null, tag: 'HUMAN INTAKE', reason: 'queued for the Monday 08:00 extract — 0 firm citations yet.', cite: `CIT-FRM-${id}`, status: 'NEW', origin: via === 'shell' ? 'SHELL' : 'FORM', addedAt: now().slice(0, 5) },
+        { id, name: clean, ticker: id, score: null, tag: 'HUMAN INTAKE', reason: 'New candidate; metrics and evidence need analyst review.', cite: `CIT-FRM-${id}`, status: 'NEW', origin: via === 'shell' || via === 'cli' ? 'SHELL' : 'FORM', addedAt: now().slice(0, 5) },
         ...s.screener,
       ],
     }));
-    get().pushAudit('YOU', `screener intake — ${clean}`, `via ${via} · receipt filed · no score invented`, id);
+    get().pushAudit(via === 'cli' || via === 'shell' ? 'AGENT' : 'YOU', `screener intake — ${clean}`, `via ${via} · receipt filed · no score invented`, id);
     get().emitCmd(`screen add "${clean}"`, via);
-    return { ok: true, msg: `intake ${clean} — receipt filed, no score invented` };
+    return { ok: true, id, msg: `intake ${clean} — receipt filed, no score invented` };
   },
 
   extractRun: () => {
@@ -679,7 +736,9 @@ export const useStore = create<State>((set, get) => ({
     if (get().halAck) return;
     const rid = 'R-' + String(ridN++).padStart(4, '0');
     const who = get().identity;
-    const delta = get().docs.find((d) => d.id === 'hal-nav-08')?.fields.find((f) => f.key === 'fee_delta_usd')?.value;
+    const approved = get().records.find(r => r.docId === 'hal-nav-08');
+    if (!approved) { toast.error('Review and save the NAV record first.'); return; }
+    const delta = approved.values.fee_delta_usd;
     set((s) => ({
       halAck: true,
       ledger: [{ rid, title: `Halcyon restatement acknowledged — fee comparison $${delta} filed`, wid: 'W-OPS-HAL', by: who ? `${who.name} (${who.role})` : 'you', ts: '09-07 ' + now().slice(0, 5) }, ...s.ledger],

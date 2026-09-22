@@ -1,3 +1,7 @@
+import Fees from './components/Fees';
+import Monitoring from './components/Monitoring';
+import DataLibrary from './components/DataLibrary';
+import Screening from './components/Screening';
 import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { useStore, openApprovals, worstNav, CASH_YTD } from './lib/store';
@@ -106,6 +110,10 @@ export default function App() {
               {view === 'book' && <Portfolio />}
               {view === 'fund' && <FundPage />}
               {view === 'team' && <Team />}
+              {view === 'fees' && <Fees key={identity.role} />}
+              {view === 'monitoring' && <Monitoring />}
+              {view === 'screening' && <Screening />}
+              {view === 'library' && <DataLibrary key={identity.role} />}
             </main>
           </div>
           <AuditDrawer />

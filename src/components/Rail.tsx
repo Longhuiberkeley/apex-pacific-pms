@@ -1,3 +1,4 @@
+import { canReadWork } from '../lib/records';
 import { useState } from 'react';
 import { LogOut, Plus } from 'lucide-react';
 import { useStore, openApprovals } from '../lib/store';
@@ -55,7 +56,10 @@ export default function Rail() {
   const docs = useStore((s) => s.docs);
   const trigAssessed = useStore((s) => s.trigAssessed);
   const gateOpen = useStore((s) => s.gateOpen);
-  const assignments = useStore((s) => s.assignments);
+  const allAssignments = useStore((s) => s.assignments);
+  const workReader = useStore(s=>s.identity);
+  const workDocs = useStore(s=>s.docs);
+  const assignments = allAssignments.filter(a=>canReadWork(workReader,a,workDocs));
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [notice, setNotice] = useState('');
@@ -98,7 +102,7 @@ export default function Rail() {
       {identity && (
         <div className="mx-3 mb-3 flex items-center gap-2 rounded border border-white/10 bg-white/[0.04] px-2 py-1.5 text-[12px]">
           <div className="min-w-0 flex-1 truncate">
-            {identity.name} — {identity.role}
+            <select aria-label="Workspace role" value={identity.role} onChange={e=>useStore.getState().login(e.target.value==='PM'?'a.chan@apexpacific.example':'l.wu@apexpacific.example')} className="w-full bg-rail text-[12px] text-white"><option value="PM">A. Chan · PM</option><option value="Analyst">L. Wu · Analyst</option></select>
           </div>
           <button onClick={logout} title="sign out" className="rounded p-0.5 text-white/50 transition-colors hover:text-white">
             <LogOut size={11} />
@@ -132,6 +136,7 @@ export default function Rail() {
       <Tip label="See who is doing what, and review their work."><button onClick={() => setView('team')} className={cn('mx-3 mb-4 flex items-center gap-2 rounded border px-3 py-2.5 text-left text-[13px] transition-colors', view === 'team' ? 'border-white/20 bg-white/12 text-white' : 'border-white/10 text-white/75 hover:bg-white/[0.06] hover:text-white')}>
         <span className="flex-1">Team workspace</span><span className="font-mono text-wait">{assignments.filter((a) => a.status === 'Needs review').length}</span><span className="font-mono text-[12px] text-white/30">4</span>
       </button></Tip>
+      <div className="mx-3 mb-3 grid gap-1">{([['screening','Screening'],['library','Data library'],['monitoring','Monitoring'],['fees','Fees']] as const).map(([key,label]) => <button key={key} onClick={() => setView(key)} className={cn('rounded px-3 py-2 text-left text-[13px]',view === key ? 'bg-white/12 text-white' : 'text-white/70 hover:bg-white/5')}>{label}</button>)}</div>
       <Tip label="Open a fund’s documents, tasks and history."><div tabIndex={0} className="px-3.5 pb-1.5 text-[12px] text-white/40">Funds</div></Tip>
       <nav className="min-h-0 flex-1 overflow-y-auto px-2" aria-label="funds">
         {ranked.map((f) => {
@@ -152,7 +157,7 @@ export default function Rail() {
         })}
       </nav>
 
-      <div className="mx-2 mb-2 rounded border border-dashed border-white/15 px-2 py-2">
+      <div className="mx-2 mb-2 max-h-40 overflow-y-auto rounded border border-dashed border-white/15 px-2 py-2">
         <Tip label="Follow funds we are considering investing in."><div tabIndex={0} className="mb-1 text-[12px] text-white/40">Pipeline</div></Tip>
         {pipeline.map((c) => {
           const flash = notice.includes(c.id);
@@ -197,7 +202,7 @@ export default function Rail() {
       </div>
 
       <div className="mt-auto border-t border-white/10 px-3 py-2.5">
-        <a href="https://github.com/Longhuiberkeley/apex-pacific-pms/blob/main/DEMO_PRACTICE.md" target="_blank" rel="noopener noreferrer" className="mb-2 block text-[12px] text-white/65 transition-colors hover:text-white">Presenter guide ↗</a>
+        <a href={import.meta.env.DEV ? "/DEMO_V3_WALKTHROUGH.md" : "https://github.com/Longhuiberkeley/apex-pacific-pms/blob/main/DEMO_V3_WALKTHROUGH.md"} target="_blank" rel="noopener noreferrer" className="mb-2 block text-[12px] text-white/65 transition-colors hover:text-white">Presenter guide ↗</a>
         <div className="flex items-center gap-3 text-[12px]">
           <Tip label="View recent history — who did what."><button onClick={() => setAudit(true)} className="text-white/65 transition-colors hover:text-white">Audit <span className="ml-0.5 font-mono text-[12px] text-white/30">3</span></button></Tip>
           <Tip label="See the tools in this platform and what could be added."><button onClick={() => setModules(true)} className="text-white/65 transition-colors hover:text-white">Modules</button></Tip>

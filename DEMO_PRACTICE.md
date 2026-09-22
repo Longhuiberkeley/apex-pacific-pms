@@ -1,3 +1,5 @@
+> **Updated local walkthrough:** [Analyst workflow demo](DEMO_V3_WALKTHROUGH.md) covers the new Screening, Data library, permissions, CLI intake, Monitoring and Fees pages. The public deployment may still use the older flow below.
+
 # Long Hui’s demo practice sheet
 
 This file is enough to rehearse without the chat. The app is **Apex Pacific PMS v3**, a fictional

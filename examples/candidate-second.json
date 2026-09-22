@@ -1,0 +1,6 @@
+{
+  "name": "Stonehaven Relative Value",
+  "metrics": { "return": 10.2, "volatility": 8.4, "drawdown": 11.8, "sharpe": 1.2, "history": 66, "notice": 30, "concentration": 5.1 },
+  "metricSource": "Fictional prepared manager pack; portfolio correlation evidence not supplied",
+  "metricAsOf": "2026-08-31"
+}

@@ -1,3 +1,5 @@
+import { canReadWork } from '../lib/records';
+import { provenance } from '../lib/records';
 import { useEffect, useMemo, useState } from 'react';
 import { FileSpreadsheet } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -62,7 +64,10 @@ export default function Today() {
   const setView = useStore((s) => s.setView);
   const openFund = useStore((s) => s.openFund);
   const funds = useStore((s) => s.funds);
-  const assignments = useStore((s) => s.assignments);
+  const allAssignments = useStore((s) => s.assignments);
+  const workReader = useStore(s=>s.identity);
+  const workDocs = useStore(s=>s.docs);
+  const assignments = allAssignments.filter(a=>canReadWork(workReader,a,workDocs));
   const openAssignment = useStore((s) => s.openAssignment);
   const teamFollowUps = assignments.filter((a) => a.status === 'Needs review' || (a.parentId && a.status !== 'Done'));
   const fundLabel = (id: string) => funds.find((f) => f.id === id)?.name.split(' ').slice(0, 2).join(' ') ?? id;
@@ -159,7 +164,7 @@ export default function Today() {
             const on = sel ? rowKey(sel) === rowKey(r) : false;
             if (r.kind === 'gate') {
               return (
-                <button
+                <div role="group" tabIndex={0} onKeyDown={e=>{if(e.target===e.currentTarget && (e.key==='Enter' || e.key===' ')){e.preventDefault();setSel(r);}}}
                   key="gate"
                   onClick={() => setSel(r)}
                   className={cn('flex w-full items-start gap-2.5 border-b border-line px-3 py-2.5 text-left hover:bg-paper', on && 'bg-paper')}
@@ -172,7 +177,7 @@ export default function Today() {
                   <Btn size="sm" onClick={(e) => { e.stopPropagation(); setView('book'); }}>
                     Review
                   </Btn>
-                </button>
+                </div>
               );
             }
             if (r.kind === 'doc') {
@@ -187,7 +192,7 @@ export default function Today() {
                 >
                   <Pip tone={ok ? 'ai' : 'wait'} />
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-medium text-ink">{d.title}</div>
+                    <div className="text-[13px] font-medium text-ink">{d.title}</div><div className="mt-1 break-all text-[12px] text-muted">{provenance(d).mailbox}<br/>{provenance(d).filename}</div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
                       <span>{d.kind === 'email' ? 'Email' : 'Pdf'}</span>
                       {d.fundId && (
@@ -235,7 +240,7 @@ export default function Today() {
             }
             if (r.kind === 'sable') {
               return (
-                <button
+                <div role="group" tabIndex={0} onKeyDown={e=>{if(e.target===e.currentTarget && (e.key==='Enter' || e.key===' ')){e.preventDefault();setSel(r);}}}
                   key="sable"
                   onClick={() => setSel(r)}
                   className={cn('flex w-full items-start gap-2.5 border-b border-line px-3 py-2.5 text-left hover:bg-paper', on && 'bg-paper')}
@@ -258,13 +263,13 @@ export default function Today() {
                   <Btn size="sm" onClick={(e) => { e.stopPropagation(); setSel(r); }}>
                     Review
                   </Btn>
-                </button>
+                </div>
               );
             }
             if (r.kind === 'broker') {
               const state = !brokerParsed ? 'Arrived' : !reconciled ? 'Parsed' : 'Reconciled';
               return (
-                <button
+                <div role="group" tabIndex={0} onKeyDown={e=>{if(e.target===e.currentTarget && (e.key==='Enter' || e.key===' ')){e.preventDefault();setSel(r);}}}
                   key="broker"
                   onClick={() => setSel(r)}
                   className={cn('flex w-full items-start gap-2.5 border-b border-line px-3 py-2.5 text-left hover:bg-paper', on && 'bg-paper')}
@@ -277,13 +282,13 @@ export default function Today() {
                   <Btn size="sm" onClick={(e) => { e.stopPropagation(); setSel(r); }}>
                     Review
                   </Btn>
-                </button>
+                </div>
               );
             }
             const q = queue.find((x) => x.wid === r.wid);
             if (!q) return null;
             return (
-              <button
+              <div role="group" tabIndex={0} onKeyDown={e=>{if(e.target===e.currentTarget && (e.key==='Enter' || e.key===' ')){e.preventDefault();setSel(r);}}}
                 key={q.wid}
                 onClick={() => setSel(r)}
                 className={cn('flex w-full items-start gap-2.5 border-b border-line px-3 py-2.5 text-left hover:bg-paper', on && 'bg-paper')}
@@ -296,7 +301,7 @@ export default function Today() {
                 <Btn size="sm" onClick={(e) => { e.stopPropagation(); setSel(r); }}>
                   Review
                 </Btn>
-              </button>
+              </div>
             );
           })}
           {rows.length === 0 && (

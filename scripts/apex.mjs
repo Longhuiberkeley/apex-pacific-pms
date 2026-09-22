@@ -18,6 +18,10 @@ if (!args.length || args[0] === 'help' || args[0] === '--help') {
   node scripts/apex.mjs tasks list
   node scripts/apex.mjs tasks get A-101
   node scripts/apex.mjs tasks submit A-101 --json=research.json
+  node scripts/apex.mjs funds add --json=examples/candidate.json
+  node scripts/apex.mjs screening get
+  node scripts/apex.mjs records list
+  node scripts/apex.mjs records get DATA-hal-nav-08
   node scripts/apex.mjs funds list
   node scripts/apex.mjs funds get SIL
   node scripts/apex.mjs docs list

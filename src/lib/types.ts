@@ -21,6 +21,9 @@ export interface Fund {
 }
 
 export interface ScreenerItem {
+  metrics?: import('./screening').Metrics;
+  metricSource?: string;
+  metricAsOf?: string;
   id: string;
   name: string;
   ticker: string;
@@ -87,7 +90,7 @@ export interface EntityHistory {
 
 export type Book = Record<string, number>;
 
-export type AppView = 'today' | 'book' | 'fund' | 'team';
+export type AppView = 'today' | 'book' | 'fund' | 'team' | 'screening' | 'library' | 'fees' | 'monitoring';
 export type FundTab = 'overview' | 'exposure' | 'documents' | 'history' | 'verdicts' | 'work';
 export type IntakePolicy = 'AUTO' | 'MANUAL';
 
@@ -105,6 +108,7 @@ export interface DocField {
 }
 
 export interface DocRecord {
+  access?: import('./records').Access;
   id: string;
   kind: DocKind;
   fundId: string | null;

@@ -1,3 +1,4 @@
+import { canReadWork } from '../lib/records';
 import { useState } from 'react';
 import { ArrowUpRight, Clock3, UserRound, Terminal } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -7,11 +8,13 @@ import { Badge, Btn, Tip } from './Ui';
 import WorkModes, { ModeBadge } from './WorkMode';
 
 export function WorkCard({ assignment: a }: { assignment: Assignment }) {
+  const permitted = useStore(s=>canReadWork(s.identity,a,s.docs));
   const openAssignment = useStore((s) => s.openAssignment);
   const funds = useStore((s) => s.funds);
   const screener = useStore((s) => s.screener);
   const name = funds.find((f) => f.id === a.fundId)?.name ?? screener.find((f) => f.id === a.fundId)?.name ?? a.fundId;
   const overdue = a.due < '2026-09-07' && a.status !== 'Done';
+  if (!permitted) return <div className="rounded border border-line p-3 text-xs text-muted">Restricted assignment · PM access required</div>;
   return (
     <button onClick={() => openAssignment(a.id)} className="group block w-full rounded-lg border border-line bg-surface p-3 text-left shadow-card transition hover:-translate-y-0.5 hover:border-ai/40 hover:shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ai">
       <div className="mb-2 flex items-center justify-between gap-2 text-[12px] text-muted"><span>{a.fundId} · {a.id}</span><ArrowUpRight size={14} className="text-muted group-hover:text-ai" /></div>
@@ -28,13 +31,15 @@ export function WorkCard({ assignment: a }: { assignment: Assignment }) {
 }
 
 export default function Team() {
-  const assignments = useStore((s) => s.assignments);
+  const allAssignments = useStore((s) => s.assignments);
+  const docs = useStore(s=>s.docs);
   const identity = useStore((s) => s.identity);
   const login = useStore((s) => s.login);
   const setShell = useStore((s) => s.setShell);
   const [person, setPerson] = useState('all');
   const [scope, setScope] = useState<'all' | 'mine' | 'review'>('all');
   const [group, setGroup] = useState<'stage' | 'person'>('stage');
+  const assignments = allAssignments.filter(a=>canReadWork(identity,a,docs));
   const rows = assignments.filter((a) => (person === 'all' || a.owner === person) && (scope === 'all' || (scope === 'mine' ? a.owner === identity?.name : a.reviewer === identity?.name && a.status === 'Needs review')));
   const reviews = assignments.filter((a) => a.status === 'Needs review' && a.reviewer === identity?.name).length;
   const blocked = assignments.filter((a) => a.status === 'Waiting externally').length;

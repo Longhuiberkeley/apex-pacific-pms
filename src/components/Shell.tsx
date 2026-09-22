@@ -56,7 +56,7 @@ export default function Shell() {
     if (!c) return;
     P(`apex$ ${c}`);
     const [verb, ...rest] = c.split(/\s+/);
-    if (['tasks', 'funds', 'docs'].includes(verb) || (verb === 'book' && rest[0] === 'get')) {
+    if (['tasks', 'funds', 'docs', 'records', 'screening'].includes(verb) || (verb === 'book' && rest[0] === 'get')) {
       const result = executeAgentCommand(c);
       P(`${result.ok ? '✓' : '⛔'} ${result.message ?? 'Record retrieved'}`);
       if (result.data) P(JSON.stringify(result.data, null, 2));

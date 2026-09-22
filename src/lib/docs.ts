@@ -7,7 +7,8 @@ export function documentErrors(doc: DocRecord): string[] {
     const value = String(field.value).trim();
     if (field.required && !value) errors.push(`${field.label} is required.`);
     if (value && numeric.test(field.key) && !Number.isFinite(Number(value))) errors.push(`${field.label} must be a number.`);
-    if (value && ['as_of', 'due'].includes(field.key)) {
+    if (value && ['nav_usd','amount_usd'].includes(field.key) && Number(value) <= 0) errors.push(`${field.label} must be positive.`);
+    if (value && ['as_of', 'due', 'period_start', 'period_end'].includes(field.key)) {
       const date = new Date(`${value}T00:00:00Z`);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== value) errors.push(`${field.label} needs a valid YYYY-MM-DD date.`);
     }

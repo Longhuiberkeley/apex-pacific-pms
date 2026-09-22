@@ -1,3 +1,4 @@
+import { canReadWork } from '../lib/records';
 import { useState, type ChangeEvent } from 'react';
 import { ArrowRight, Bot, Download, FileText, Terminal, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,7 +17,7 @@ function download(name: string, value: unknown) {
 
 export default function Assignment() {
   const id = useStore((s) => s.assignmentId);
-  const assignment = useStore((s) => s.assignments.find((a) => a.id === id));
+  const assignment = useStore((s) => s.assignments.find((a) => a.id === id && canReadWork(s.identity,a,s.docs)));
   const openAssignment = useStore((s) => s.openAssignment);
   return <Sheet open={!!assignment} onClose={() => openAssignment(null)} title={assignment?.title ?? 'Assignment'} sub={assignment ? `${assignment.id} · ${assignment.owner} → ${assignment.reviewer} · due ${assignment.due}` : undefined} width="w-[1040px]">{assignment && <AssignmentBody key={assignment.id} a={assignment} />}</Sheet>;
 }
@@ -63,6 +64,7 @@ function AssignmentBody({ a }: { a: Work }) {
   return (
     <div className="p-5">
       <div className="flex flex-wrap items-center gap-2"><ModeBadge mode={a.mode} /><Badge tone={a.status === 'Done' ? 'emerald' : a.status === 'Needs review' ? 'amber' : 'slate'}>{a.status}</Badge><button onClick={() => goFund()} className="ml-auto text-[12px] text-ai hover:underline">Open {a.fundId} fund record ↗</button></div>
+      <div className="mt-4 rounded border border-line bg-paper p-3 text-[13px]"><b>Your part:</b> inspect the cited evidence, correct the prepared findings, and state what must be confirmed next. <b>{a.reviewer}</b> reviews the recommendation before the next handoff.</div>
       <div className="mt-4 flex flex-wrap gap-1 border-b border-line pb-2">{([['work', 'Assignment & submission'], ['agent', 'Agent access / CLI']] as const).map(([key, label]) => <button key={key} onClick={() => setTab(key)} className={cn('rounded px-3 py-1.5 text-[13px]', tab === key ? 'bg-rail text-white' : 'text-muted hover:bg-surface')}>{label}</button>)}</div>
       {tab === 'agent' ? (
         <div className="mt-4 space-y-4">
@@ -95,7 +97,7 @@ function AssignmentBody({ a }: { a: Work }) {
                   <div className="flex items-center gap-2 text-[14px] font-semibold text-ai"><Bot size={16} />AI-assisted research</div>
                   <p className="mt-2 text-[13px] leading-relaxed text-muted">Let an agent investigate and prepare the work. Add your judgment, then submit a structured recommendation.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {a.id === 'A-101' && <Btn tone="blue" disabled={!!a.draft} onClick={() => prepare(a.id)}>{a.draft ? 'Prepared draft loaded' : 'Load prepared AI research'}</Btn>}
+                    {a.mode === 'type2' && <Btn tone="blue" disabled={!!a.draft} onClick={() => prepare(a.id)}>{a.draft ? 'Prepared draft loaded' : 'Load prepared AI research'}</Btn>}
                     <button onClick={() => setTab('agent')} className="text-[12px] text-ai hover:underline">Use an external agent ↗</button>
                     <label className="inline-flex cursor-pointer items-center gap-1 text-[12px] text-ai">
                       <Upload size={12} />Import JSON

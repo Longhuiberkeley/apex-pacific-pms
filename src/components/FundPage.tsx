@@ -1,3 +1,4 @@
+import { canRead, canReadWork } from '../lib/records';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useStore, SILK } from '../lib/store';
 import { chkDisplay, chkFor, DD_CHECKS, ddState, flagItems } from '../lib/dd';
@@ -60,7 +61,10 @@ const TABS: Array<{ id: FundTab; label: string }> = [
 
 export default function FundPage() {
   const fundId = useStore((s) => s.fundId);
-  const assignments = useStore((s) => s.assignments);
+  const allAssignments = useStore((s) => s.assignments);
+  const workReader = useStore(s=>s.identity);
+  const workDocs = useStore(s=>s.docs);
+  const assignments = allAssignments.filter(a=>canReadWork(workReader,a,workDocs));
   const openAssignment = useStore((s) => s.openAssignment);
   const fundTab = useStore((s) => s.fundTab);
   const setFundTab = useStore((s) => s.setFundTab);
@@ -70,6 +74,7 @@ export default function FundPage() {
   const staged = useStore((s) => s.staged);
   const screener = useStore((s) => s.screener);
   const docs = useStore((s) => s.docs);
+  const reader = useStore(s=>s.identity);
   const queue = useStore((s) => s.queue);
   const history = useStore((s) => s.history);
   const ddVerdicts = useStore((s) => s.ddVerdicts);
@@ -107,7 +112,7 @@ export default function FundPage() {
     () => (fundId ? [...history].filter((h) => h.entityId === fundId).reverse() : []),
     [history, fundId]
   );
-  const fundDocs = useMemo(() => docs.filter((d) => d.fundId === fundId), [docs, fundId]);
+  const fundDocs = useMemo(() => docs.filter((d) => d.fundId === fundId && canRead(reader,d)), [docs, fundId, reader]);
   const currentV = fundId ? ddVerdicts[fundId] : undefined;
   const priors = fundId ? verdictLog.filter((v) => v.fundId === fundId && v.vid !== currentV?.vid) : [];
 
@@ -251,6 +256,8 @@ export default function FundPage() {
             <DollarsEditor value={liveUsd} onSave={(n) => setDollars(fundId, n)} />
           </div>
         )}
+
+        <div className="flex gap-3 border-b border-line px-4 py-2 text-xs"><button className="text-ai" onClick={()=>useStore.getState().setView('library')}>Data library: originals & approved records ↗</button>{pipe && <button className="text-ai" onClick={()=>useStore.getState().startResearch(pipe.id)}>Open research assignment ↗</button>}</div>
         <RTabs.Root value={fundTab} onValueChange={(v) => setFundTab(v as FundTab)} className="mt-2">
           <RTabs.List>
             {TABS.map((t) => (
@@ -363,13 +370,15 @@ export default function FundPage() {
             </section>
           </RTabs.Content>
 
-           <RTabs.Content value="work" className="space-y-4 pt-0">
+
+          <RTabs.Content value="work" className="space-y-4 pt-0">
              <div><h2 className="text-[17px] font-semibold">Research, decisions & work</h2><p className="mt-1 text-[13px] text-muted">The same assignments shown in Team — linked to this manager throughout its lifecycle.</p></div>
              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{assignments.filter((a) => a.fundId === fundId).map((a) => <WorkCard key={a.id} assignment={a} />)}</div>
              {!assignments.some((a) => a.fundId === fundId) && <p className="text-[13px] text-muted">No team assignments for this manager yet.</p>}
            </RTabs.Content>
 
-           <RTabs.Content value="exposure" className="space-y-3 pt-0">
+
+          <RTabs.Content value="exposure" className="space-y-3 pt-0">
             {!inBook || !fund ? (
               <p className="text-[13px] text-muted">This name is not in the book.</p>
             ) : (
@@ -405,6 +414,7 @@ export default function FundPage() {
           </RTabs.Content>
 
           <RTabs.Content value="documents" className="pt-0">
+            {docs.some(d=>d.fundId===fundId && !canRead(reader,d)) && <p className="mb-3 rounded border border-dashed border-line p-3 text-sm text-muted">Restricted document · PM access required</p>}
             {fundDocs.length === 0 ? (
               <p className="text-[13px] text-muted">No intake rows for this name.</p>
             ) : (
@@ -441,7 +451,7 @@ export default function FundPage() {
                 )}
                 {selectedDoc && selectedDoc.status !== 'pending' && (
                   <p className="px-3 py-3 text-[13px] text-muted">
-                    {selectedDoc.status === 'approved' ? 'Approved' : 'Rejected'}
+                    {selectedDoc.status === 'approved' ? <button className="text-ai" onClick={()=>useStore.getState().openRecord(`DATA-${selectedDoc.id}`)}>Approved · View saved record ↗</button> : 'Rejected'}
                     {selectedDoc.rejectReason ? ` — ${selectedDoc.rejectReason}` : ''}.
                   </p>
                 )}
