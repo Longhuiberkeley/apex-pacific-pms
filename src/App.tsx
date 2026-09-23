@@ -60,6 +60,12 @@ export default function App() {
         setPalette(!useStore.getState().paletteOpen);
         return;
       }
+      // Esc exits the tour even while typing (e.g. the intake input), unless an overlay owns the key
+      if (e.key === 'Escape' && typing) {
+        const st = useStore.getState();
+        if (st.tourActive && !(st.auditOpen || st.ddqOpen || st.paletteOpen || st.shellOpen || st.modulesOpen || st.policyOpen || st.assignmentId)) st.exitTour();
+        return;
+      }
       if (typing) return;
       if (e.key === 'Escape') {
         if (useStore.getState().tourActive) useStore.getState().exitTour();

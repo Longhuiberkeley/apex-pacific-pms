@@ -44,8 +44,11 @@
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sheet { from { opacity: 0.4; transform: translateX(26px); } to { opacity: 1; transform: none; } }
 @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: none; } }
-@keyframes tourPulse { 0%,100% { outline-color: var(--color-ai); } 50% { outline-color: rgb(33 82 199 / 0.35); } }
-.tour-ring { position: fixed; z-index: 105; pointer-events: none; border-radius: 6px; outline: 2px solid var(--color-ai); outline-offset: 3px; animation: tourPulse 1.8s ease-in-out infinite; }
+@keyframes tourPulse { 0%,100% { outline-color: var(--color-wait); } 50% { outline-color: rgb(181 129 26 / 0.4); } }
+/* The highlight is drawn ON the target element (not a measured overlay), so it tracks scrolling,
+   layout and unmounts by construction. Amber (--color-wait) is the tour accent — distinct from the
+   AI blue used for links and actions. */
+.tour-target { outline: 2px solid var(--color-wait); outline-offset: 3px; border-radius: 6px; animation: tourPulse 1.8s ease-in-out infinite; }
 
 @layer base {
   html, body {

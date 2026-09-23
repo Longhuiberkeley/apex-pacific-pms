@@ -5,7 +5,7 @@ import type { Assignment } from './work';
 /** Chapter CONTENT only — never imports './store' (the store↔tour cycle is structural). Tour.tsx passes useStore.getState() as nav and snap. */
 export type TourNav = { setView: (v: AppView) => void; setTodayMode: (mode: 'mine' | 'team' | 'intake') => void; setFundsFilter: (f: 'Candidates' | 'Invested' | 'All') => void; openFund: (id: string) => void; setFundTab: (t: FundTab) => void; setOperationsSection: (section: 'reporting' | 'fees') => void; openAssignment: (id: string | null) => void; setShell: (b: boolean) => void };
 export type TourSnap = { identity: Identity | null; assignments: Assignment[]; docs: DocRecord[]; criteria: Criterion[]; records: { docId: string }[]; feeReviews: { id: string }[]; ticket: number; gateOpen: boolean; screener: ScreenerItem[]; funds: Fund[] };
-export type TourStep = { id: string; title: string; body: (snap: TourSnap) => string; target?: string; tech?: string; enter?: (nav: TourNav, snap: TourSnap) => void; done?: (snap: TourSnap) => boolean };
+export type TourStep = { id: string; title: string; body: (snap: TourSnap) => string; target?: string | ((snap: TourSnap) => string | undefined); tech?: string; enter?: (nav: TourNav, snap: TourSnap) => void; done?: (snap: TourSnap) => boolean };
 export type TourChapter = { id: string; title: string; promise: string; timebox: string; steps: TourStep[] };
 
 const silk = (snap: TourSnap) => snap.assignments.find((a) => a.id === 'A-101');
@@ -13,6 +13,11 @@ const invoiceDone = (snap: TourSnap) => snap.docs.some((d) => d.id === 'inv-pfs-
 const deskEnter = (nav: TourNav) => nav.setTodayMode('mine');
 const screeningEnter = (nav: TourNav) => { nav.setView('funds'); nav.setFundsFilter('Candidates'); };
 const silkEnter = (nav: TourNav) => { nav.setShell(false); nav.openAssignment('A-101'); };
+/** Role-switch steps keep the assignment sheet CLOSED while the wrong role is signed in (the sheet
+ *  backdrop covers the workspace selector); Tour re-runs enter on role change, reopening the sheet
+ *  on the SAME step once the role is right. */
+const silkSubmitEnter = (nav: TourNav, snap: TourSnap) => { nav.setShell(false); nav.openAssignment(snap.identity?.role === 'Analyst' ? 'A-101' : null); };
+const silkAcceptEnter = (nav: TourNav, snap: TourSnap) => { nav.setShell(false); nav.openAssignment(snap.identity?.role === 'PM' ? 'A-101' : null); };
 
 export const CHAPTERS: TourChapter[] = [
   {
@@ -20,7 +25,7 @@ export const CHAPTERS: TourChapter[] = [
     steps: [
       { id: 'desk.queue', title: 'Today is one queue', target: 'today.queue', enter: deskEnter,
         body: () => 'Documents and tasks that need a decision all land in this one queue. Each row names the source and the fund it belongs to. The chip above the queue switches Quick review (clean documents can be approved in one click) and Full review (every document gets the full pane).' },
-      { id: 'desk.open', title: 'Open a document: original → extracted draft → your review', target: 'doc.review', enter: deskEnter, done: invoiceDone,
+      { id: 'desk.open', title: 'Open a document: original → extracted draft → your review', target: 'today.invoice', enter: deskEnter, done: invoiceDone,
         body: (snap) => !snap.docs.some((d) => d.status === 'pending')
           ? 'Everything here is already reviewed — open Document intake to compare originals with saved records.'
           : 'Click the Pacific Fund Services invoice ($48,750). The left pane shows the original message exactly as it arrived; the right shows the values the AI extracted. The original file is never changed by your review.' },
@@ -40,31 +45,35 @@ export const CHAPTERS: TourChapter[] = [
         body: (snap) => (JSON.stringify(snap.criteria)!==JSON.stringify(DEFAULT_CRITERIA)
           ? 'You have already adjusted the criteria — watch the counts above move as you change more of them. '
           : 'Open Editable criteria, change one threshold, then press Apply settings. The counts above move at once. ') + 'Applying is recorded with your name — the thresholds are a human decision, not an agent setting.' },
-      { id: 'screening.judgment', title: 'Judgment still needed: open the research assignment', enter: screeningEnter,
+      { id: 'screening.judgment', title: 'Judgment still needed: open the research assignment', target: 'screening.next', enter: screeningEnter,
         body: () => 'Numbers only get a candidate so far. Select Silk River Frontier and press Open research assignment — the work goes to an analyst, whose research then needs a portfolio manager decision. Chapter 3 follows exactly that path.' },
     ],
   },
   {
     id: 'silk', title: 'Due diligence: Silk River, analyst → PM', promise: 'One research assignment, two signatures, a real handoff.', timebox: '~90s',
     steps: [
-      { id: 'silk.brief', title: 'The brief: evidence, deliverables, what happens next', target: 'assignment.submit', enter: silkEnter, tech: 'Assignment A-101 · carry-forward A-101-NEXT',
+      { id: 'silk.brief', title: 'The brief: evidence, deliverables, what happens next', target: 'assignment.brief', enter: silkEnter, tech: 'Assignment A-101 · carry-forward A-101-NEXT',
         body: () => 'The Silk River screening assignment carries its brief, the evidence excerpts it may cite, and the required deliverables. This is research with named sources — not an investment decision.' },
-      { id: 'silk.submit', title: 'As the analyst: prepare, judge, submit', target: 'role.switch', enter: silkEnter, tech: 'Assignment A-101 · carry-forward A-101-NEXT',
-        done: (snap) => silk(snap)?.status==='Needs review',
+      { id: 'silk.submit', title: 'As the analyst: prepare, judge, submit', enter: silkSubmitEnter, tech: 'Assignment A-101 · carry-forward A-101-NEXT',
+        target: (snap) => snap.identity?.role === 'Analyst' ? 'assignment.submit' : 'role.switch',
+        done: (snap) => silk(snap)?.status === 'Needs review' || silk(snap)?.status === 'Done',
         body: (snap) => {
           const a = silk(snap);
           if (a?.status==='Needs review') return 'This submission is already with the reviewer — continue to the portfolio manager step.';
           if (a?.status==='Done') return 'This review is already accepted — continue to the handoff step.';
-          return (snap.identity?.role!=='Analyst' ? 'Switch to L. Wu · Analyst with the workspace selector at the top-left. ' : '') + 'Role changes are real sign-ins, so the assignment sheet closes on purpose — press Next and the tour reopens it. Watch restricted notes appear and disappear as you switch: that is role-level viewing. Then press Load prepared AI research, add your judgment to the draft, and Submit for review. The platform checks the structure and the source references before routing it to A. Chan.';
-        } },
-      { id: 'silk.accept', title: 'As the PM: read it, write the note, accept', target: 'role.switch', enter: silkEnter, tech: 'Assignment A-101 · carry-forward A-101-NEXT',
+          return (snap.identity?.role!=='Analyst'
+            ? 'Switch to L. Wu · Analyst with the workspace selector at the top-left. The assignment reopens here as soon as the role changes. Watch restricted notes appear and disappear as you switch: that is role-level viewing. '
+            : 'Press Load prepared AI research, add your judgment to the draft, then Submit for review. The platform checks the structure and the source references before routing it to A. Chan.'); } },
+      { id: 'silk.accept', title: 'As the PM: read it, write the note, accept', enter: silkAcceptEnter, tech: 'Assignment A-101 · carry-forward A-101-NEXT',
+        target: (snap) => snap.identity?.role!=='PM' ? 'role.switch' : silk(snap)?.status==='Needs review' ? 'assignment.review' : 'assignment.submit',
         done: (snap) => silk(snap)?.status==='Done',
         body: (snap) => {
           const a = silk(snap);
           if (a?.status==='Done') return 'Already accepted — continue to the handoff step.';
-          if (!a || a.status!=='Needs review') return 'The analyst has not submitted yet — finish the analyst step first, then come back.';
-          return (snap.identity?.role!=='PM' ? 'Switch to A. Chan · PM with the workspace selector — review is assigned to the named portfolio manager. ' : '') + 'Read the submission, write the review note, then press Accept → begin diligence. That decision is yours: the tour never clicks it for you, and agents are blocked from it.';
-        } },
+          if (!a || a.status!=='Needs review') return 'The analyst has not submitted yet — go back one step, submit as the analyst, then return.';
+          return (snap.identity?.role!=='PM'
+            ? 'Switch to A. Chan · PM with the workspace selector — the review belongs to the named portfolio manager, and the assignment reopens here. '
+            : 'Read the submission, write the review note, then press Accept → begin diligence. That decision is yours: the tour never clicks it for you, and agents are blocked from it.'); } },
       { id: 'silk.handoff', title: 'The handoff: conditions travel to Operations', tech: 'Assignment A-101 · carry-forward A-101-NEXT',
         enter: (nav, snap) => { nav.setShell(false); const nxt = snap.assignments.find((x) => x.parentId==='A-101'); if (nxt) nav.openAssignment(nxt.id); else nav.openAssignment('A-101'); },
         body: (snap) => snap.assignments.some((x) => x.parentId==='A-101')
@@ -89,7 +98,7 @@ export const CHAPTERS: TourChapter[] = [
     steps: [
       { id: 'book.table', title: 'Allocation dollars, and the five limits that judge the book', target: 'book.table', enter: (nav) => nav.setView('book'),
         body: () => 'Every row is editable dollars with the percentage beside it. Cash absorbs the residual, so the total always reads 100.0%. The strip below judges the book against five limits: single fund, equity strategy, minimum cash, total allocation, and NAV freshness.' },
-      { id: 'book.stage', title: 'Edit one dollar cell — the proposal stages itself', target: 'book.approve', enter: (nav) => nav.setView('book'),
+      { id: 'book.stage', title: 'Edit one dollar cell — the proposal stages itself', target: 'book.edit', enter: (nav) => nav.setView('book'),
         done: (snap) => snap.gateOpen,
         body: (snap) => snap.gateOpen
           ? 'A proposal is already staged: the gate is open and the buttons already read Approve allocation and Discard.'

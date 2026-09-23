@@ -188,6 +188,7 @@ export default function Today() {
               return (
                 <div
                   key={d.id}
+                  data-tour={d.id === 'inv-pfs-q3' ? 'today.invoice' : undefined}
                   onClick={() => setSel(r)}
                   className={cn('flex w-full cursor-pointer items-start gap-2.5 border-b border-line px-3 py-2.5 hover:bg-paper', on && 'bg-paper')}
                 >

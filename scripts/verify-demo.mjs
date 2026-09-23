@@ -144,6 +144,15 @@ try {
  assert(await evaluate(`window.demoStore.getState().tourActive===false&&window.demoStore.getState().assignmentId===null`),'Escape exits the tour and closes its overlays');
  await click('Presenter tools ▾');await wait(100);await click('Restart interactive tour');await wait(200);
  assert(await evaluate(`window.demoStore.getState().tourActive===true`),'Restart interactive tour relaunches the tour');
+ await card('Due diligence: Silk River');await wait(250);
+ await click('Next');await wait(250);
+ assert(await evaluate(`window.demoStore.getState().assignmentId===null&&!!document.querySelector('[data-tour="role.switch"].tour-target')`),'Role-switch step closes the assignment sheet and highlights the workspace selector itself');
+ await evaluate(`window.demoStore.getState().login('l.wu@apexpacific.example')`);await wait(300);
+ assert(await evaluate(`window.demoStore.getState().assignmentId==='A-101'&&!!document.querySelector('[data-tour="assignment.submit"].tour-target')`),'Switching to the analyst reopens the assignment on the same step and moves the highlight');
+ await evaluate(`window.demoStore.getState().tourNext()`);await wait(300);
+ assert(await evaluate(`window.demoStore.getState().assignmentId===null&&!!document.querySelector('[data-tour="role.switch"].tour-target')`),'PM step closes the sheet again until the reviewer role is signed in');
+ await evaluate(`window.demoStore.getState().startTour()`);await wait(200);
+ assert(await evaluate(`window.demoStore.getState().identity?.role==='PM'&&window.demoStore.getState().tourActive===true`),'startTour restores the PM identity and the chapter chooser');
  await card('Add a fund candidate');await wait(250);
  assert(await evaluate(`!!document.querySelector('[data-tour="intake.form"]')&&!!document.querySelector('[data-tour="screening.table"]')&&!!document.querySelector('[data-tour="screening.criteria"]')`),'Intake chapter targets the real screening surface');
  await click('Exit tour');await wait(150);

@@ -193,7 +193,7 @@ export default function Portfolio() {
                 </tr>
               ))}
             </thead>
-            <tbody>
+            <tbody data-tour="book.edit">
               {table.getRowModel().rows.map((row) => (
                 <tr key={row.id} className="h-10 transition-colors hover:bg-paper">
                   {row.getVisibleCells().map((cell) => (
