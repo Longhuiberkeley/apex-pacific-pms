@@ -139,6 +139,7 @@ try {
  assert(det&&det.open===false&&det.summary==='Technical details'&&det.tech.includes('carry-forward A-101-NEXT'),'Technical ids sit under a closed Technical details disclosure');
  assert(!p.text.includes('A-101')&&p.raw.includes('A-101'),'Technical ids are hidden from the readable tour copy');
  assert(await evaluate(`!!document.querySelector('[data-tour="assignment.submit"]')`),'Silk chapter opens the real assignment sheet');
+ assert(await evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent.trim()==='Next');if(!b)return false;const r=b.getBoundingClientRect();const el=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return !!el&&(b===el||b.contains(el))})()`),'The coach panel stays clickable above an open assignment sheet (Radix sets body pointer-events:none)');
  assert(!forbidden.test((await evaluate('document.querySelector("main").innerText'))+p.text),'Silk chapter copy and main content stay free of internal codes');
  await evaluate(`(()=>{const p=[...document.querySelectorAll('div')].find(d=>typeof d.className==='string'&&d.className.includes('z-[110]'));p.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));})()`);await wait(150);
  assert(await evaluate(`window.demoStore.getState().tourActive===false&&window.demoStore.getState().assignmentId===null`),'Escape exits the tour and closes its overlays');
