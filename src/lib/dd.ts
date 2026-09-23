@@ -23,24 +23,24 @@ export function openFlags(id: string): string[] {
 
 export type FlagTone = 'crimson' | 'amber' | 'emerald';
 
-export function flagItems(id: string): Array<{ tone: FlagTone; label: string; body: string }> {
+export function flagItems(id: string): Array<{ tone: FlagTone; label: string; body: string; to: import('./types').FundTab }> {
   switch (id) {
     case 'SAB':
       return [
-        { tone: 'crimson', label: 'Overdue NAV report', body: 'August NAV is 23 days past the reporting deadline. Operations needs to obtain the administrator’s report.' },
-        { tone: 'amber', label: 'Valuation evidence needs review', body: 'The manager promises independent valuations within 15 days. However, 31% of holdings use unobservable valuation inputs and pricing questions have remained open for more than 60 days.' },
+        { tone: 'crimson', label: 'Overdue NAV report', body: 'August NAV is 23 days past the reporting deadline. Operations needs to obtain the administrator’s report.', to: 'operations' },
+        { tone: 'amber', label: 'Valuation evidence needs review', body: 'The manager promises independent valuations within 15 days. However, 31% of holdings use unobservable valuation inputs and pricing questions have remained open for more than 60 days.', to: 'operations' },
       ];
     case 'HAL':
       return [
-        { tone: 'amber', label: 'Restatement', body: 'July NAV restated −0.8pp after final pricing. Separately, the current pack shows a 0.15% fee versus 0.12% expected; inspect the code-computed comparison in Documents.' },
+        { tone: 'amber', label: 'Restatement', body: 'July NAV restated −0.8pp after final pricing. Separately, the current pack shows a 0.15% fee versus 0.12% expected; inspect the code-computed comparison in Documents.', to: 'documents' },
       ];
     case 'KUR':
       return [
-        { tone: 'amber', label: 'Market sensitivity above mandate', body: 'The manager describes the strategy as market-neutral. Its measured sensitivity to the TOPIX index is 0.62 over 12 months, above the 0.35 mandate limit. Research should investigate the exposure.' },
+        { tone: 'amber', label: 'Market sensitivity above mandate', body: 'The manager describes the strategy as market-neutral. Its measured sensitivity to the TOPIX index is 0.62 over 12 months, above the 0.35 mandate limit. Research should investigate the exposure.', to: 'work' },
       ];
     case 'NOR':
       return [
-        { tone: 'amber', label: 'Pending', body: 'The administrator controls report (SOC 1) has not been received. Operations should request it before this review can be completed.' },
+        { tone: 'amber', label: 'Pending', body: 'The administrator controls report (SOC 1) has not been received. Operations should request it before this review can be completed.', to: 'operations' },
       ];
     default:
       return [];

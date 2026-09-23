@@ -146,7 +146,7 @@ export default function Portfolio() {
       }),
       columnHelper.display({
         id: 'contrib',
-        header: 'Contrib',
+        header: 'Contribution',
         cell: ({ row }) => {
           const f = row.original;
           const c = ((live[f.id] ?? 0) * f.ytd) / 100;
@@ -180,7 +180,7 @@ export default function Portfolio() {
           staged ? <Badge tone="amber">Proposal awaiting approval</Badge> : <Badge tone="emerald">Current allocation</Badge>
         }
       >
-        <div className="overflow-x-auto rounded-lg border border-line bg-surface">
+        <div data-tour="book.table" className="overflow-x-auto rounded-lg border border-line bg-surface">
           <table className="w-full border-collapse text-[13px]">
             <thead>
               {table.getHeaderGroups().map((hg) => (
@@ -249,7 +249,7 @@ export default function Portfolio() {
               : `All portfolio limits pass · NAV $142.5M`}
           </div>
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <div data-tour="book.approve" className="mt-2.5 flex flex-wrap items-center gap-2">
             {!staged ? (
               <Btn tone="emerald" onClick={stageProposal}>Prepare proposal</Btn>
             ) : (
@@ -258,7 +258,7 @@ export default function Portfolio() {
                 <Btn onClick={clearStage}>Discard</Btn>
               </>
             )}
-            <Btn size="sm" onClick={() => pasteAgentProposal('form')}>Paste agent proposal</Btn>
+            <Btn size="sm" title="Stage the seeded raw agent proposal (demo)" aria-label="Stage the seeded raw agent proposal (demo)" onClick={() => pasteAgentProposal('form')}>Stage seeded agent proposal (demo)</Btn>
             {gateOpen && viol.length === 0 && <span className="text-[12px] text-pass">Ready for portfolio manager approval</span>}
             {gateOpen && viol.length > 0 && <span className="text-[12px] text-stop">Resolve the highlighted issues before approval</span>}
           </div>

@@ -10,7 +10,7 @@ export default function StatusBar() {
   const docs = useStore((s) => s.docs);
   const trigAssessed = useStore((s) => s.trigAssessed);
   const gateOpen = useStore((s) => s.gateOpen);
-  const setView = useStore((s) => s.setView);
+  const setTodayMode = useStore((s) => s.setTodayMode);
   const openFund = useStore((s) => s.openFund);
 
   const live = book;
@@ -38,8 +38,8 @@ export default function StatusBar() {
         <span className="font-mono tabular-nums text-muted">({cashPct.toFixed(1)}%)</span>
       </span>
       {sep}
-      <button onClick={() => setView('today')} className="hover:underline">
-        Awaiting review <span className="font-mono tabular-nums">{approvals}</span>
+      <button onClick={() => setTodayMode('mine')} className="hover:underline">
+        Needs attention <span className="font-mono tabular-nums">{approvals}</span>
       </button>
       {sep}
       <button onClick={() => openFund(sable?.id ?? 'SAB')} className="hover:underline">

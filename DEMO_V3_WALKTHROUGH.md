@@ -12,6 +12,8 @@ Each fund has Overview, Research & diligence, Documents & data, Operations, and 
 
 The original internal IDs still work in the CLI. They are tucked under technical details in the human interface.
 
+**Interactive demo tour:** the login card’s third option, **Interactive demo**, opens a guided walkthrough over these same screens — a chapter chooser (daily documents · screening · Silk River due diligence · add a fund candidate · portfolio & fees), about 4 minutes, chapters in any order. Restart it from Presenter tools → Restart interactive tour; refresh resets it. **Exit tour** on the coach panel, or Esc, leaves the tour and keeps your work.
+
 ## 1. Compare candidates, then investigate one fund
 
 Open Funds → Candidates. Select Dovetail Equity, which passes the default checks. Change Annualized return from 11 to 14.5: it leaves the eligible group. Restore defaults and apply settings if needed.
@@ -48,19 +50,19 @@ node scripts/apex.mjs tasks get RESEARCH-<returned-fund-id>
 node scripts/apex.mjs tasks submit RESEARCH-<returned-fund-id> --json=/tmp/research.json
 ```
 
-Give OpenCode or Claude Code `AGENT_DEMO.md` for the report contract. New candidates appear in Funds without refresh; their reports enter the same fund assignment and Today review queue. Duplicate names are rejected. After a timeout, read current state before retrying a write.
+Give OpenCode or Claude Code [AGENT_DEMO.md](AGENT_DEMO.md) for the report contract, the full command reference and the UI ↔ CLI parity table. Reads worth knowing: `today queue`, `fees get`, `monitoring get`, `dd get`, `whoami`. New candidates appear in Funds without refresh; their reports enter the same fund assignment and Today review queue. Duplicate names are rejected. After a timeout, read current state before retrying a write.
 
 The transport is live; built-in research and extraction are prepared examples. The app does not invoke a model.
 
 ## 5. Resolve a reporting exception
 
-Open Sable Creek → Operations → Reporting & monitoring. Its 38-day-old NAV exceeds the 30-day limit. Check reporting & assign follow-up, then open the investigation. Alternatively, Today’s overdue Sable alert opens that same investigation.
+Open Sable Creek → Operations → Reporting & monitoring. Its 38-day-old NAV exceeds the 30-day limit. Press Check reporting & assign follow-up, then open the investigation it links to. Today’s overdue Sable alert is now consumable: its **Open investigation** button creates the investigation and turns the alert into a reviewable workup in the queue.
 
 Prepare the findings, edit and submit. As PM, accept with “Obtain the overdue administrator pack and verify the valuation date.” The next Operations task inherits the instruction. The numerical issue remains until underlying data resolves it. Repeating the check does not duplicate the investigation.
 
 ## 6. Reconcile a management fee
 
-After approving Halcyon’s NAV, open Halcyon → Operations → Management fees as PM. All three source links open approved records within Halcyon.
+After approving Halcyon’s NAV, open Halcyon → Operations → Management fees as PM — the saved NAV record and the approval toast both offer **Review fee reconciliation →** straight to this worksheet. All three source links open approved records within Halcyon.
 
 The August example calculates $17.1M × 1.44% × 31 / 365 = $20,913.53. Against a $22,500 invoice, the variance is $1,586.47. Edit a proposed rate or date, then restore approved inputs. Explain the discrepancy and approve. Expand the saved reconciliation for its calculation and reviewer; JSON is under Technical details.
 

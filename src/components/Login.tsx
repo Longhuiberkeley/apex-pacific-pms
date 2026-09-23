@@ -6,6 +6,7 @@ import { Logo } from './Rail';
 
 export default function Login() {
   const login = useStore((s) => s.login);
+  const startTour = useStore((s) => s.startTour);
   const [email, setEmail] = useState('a.chan@apexpacific.example');
   const [err, setErr] = useState('');
 
@@ -47,6 +48,9 @@ export default function Login() {
         <button onClick={go} className="mx-auto mt-3 block text-[12px] text-muted transition-colors hover:text-ink">
           Skip MFA
         </button>
+        <div className="my-3 border-t border-line"/>
+        <Btn tone="ghost" className="w-full" onClick={startTour}>Interactive demo</Btn>
+        <p className="mt-2 text-center text-[12px] text-muted">Guided walkthrough · ~4 min · real screens</p>
       </div>
     </div>
   );

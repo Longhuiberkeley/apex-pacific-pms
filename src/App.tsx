@@ -12,6 +12,7 @@ import Login from './components/Login';
 import Portfolio from './components/Portfolio';
 import Shell from './components/Shell';
 import Palette from './components/Palette';
+import Tour from './components/Tour';
 import Assignment from './components/Assignment';
 import { startAgentBridge } from './lib/agentBridge';
 import { AuditDrawer, DdqExport, EntityAudit } from './components/Drawers';
@@ -61,12 +62,13 @@ export default function App() {
       }
       if (typing) return;
       if (e.key === 'Escape') {
+        if (useStore.getState().tourActive) useStore.getState().exitTour();
         useStore.getState().closeAllOverlays();
         return;
       }
       // never switch views under an open overlay — the visible surface owns the keys
       const s = useStore.getState();
-      if (s.auditOpen || s.ddqOpen || s.paletteOpen || s.shellOpen || s.modulesOpen || s.policyOpen || s.assignmentId) return;
+      if (s.tourActive || s.auditOpen || s.ddqOpen || s.paletteOpen || s.shellOpen || s.modulesOpen || s.policyOpen || s.assignmentId) return;
       if (e.key === '1') setView('today');
       else if (e.key === '2') setView('book');
       else if (e.key === '3') setAudit(true);
@@ -115,6 +117,7 @@ export default function App() {
           <Assignment />
           <Palette />
           <Shell />
+          <Tour />
         </div>
       )}
     </div>

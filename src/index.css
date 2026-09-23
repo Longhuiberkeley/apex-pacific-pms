@@ -44,6 +44,8 @@
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sheet { from { opacity: 0.4; transform: translateX(26px); } to { opacity: 1; transform: none; } }
 @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes tourPulse { 0%,100% { outline-color: var(--color-ai); } 50% { outline-color: rgb(33 82 199 / 0.35); } }
+.tour-ring { position: fixed; z-index: 105; pointer-events: none; border-radius: 6px; outline: 2px solid var(--color-ai); outline-offset: 3px; animation: tourPulse 1.8s ease-in-out infinite; }
 
 @layer base {
   html, body {

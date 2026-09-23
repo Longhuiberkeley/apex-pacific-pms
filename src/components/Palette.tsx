@@ -1,7 +1,7 @@
 import { Command } from 'cmdk';
 import { toast } from 'sonner';
 import { useStore } from '../lib/store';
-import { VERBS } from '../lib/verbs';
+import { helpLines } from '../lib/verbs';
 
 /** ⌘K — the command palette. Same verbs as the shell, same rails as the forms. */
 export default function Palette() {
@@ -67,8 +67,7 @@ export default function Palette() {
           <Item
             onSelect={nav(() => {
               setShell(true);
-              shellPrint('verbs — every one maps to a form, a row, or a lever:');
-              VERBS.forEach((v) => shellPrint(`  ${v.cmd.padEnd(34)} ${v.desc}${v.gate ? '  ⚠ ' + v.gate : ''}`));
+              helpLines().forEach((l) => shellPrint(l));
             })}
           >
             help <span className="text-muted">· print the verb list in the shell</span>

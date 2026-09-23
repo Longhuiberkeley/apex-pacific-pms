@@ -60,7 +60,7 @@ export default function DocReview({
   if (!canRead(identity, doc)) return <p className="p-5 text-sm">Restricted document · PM access required</p>;
   const location = provenance(doc);
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div data-tour="doc.review" className="flex h-full min-h-0 flex-col">
       <header className="shrink-0 border-b border-line px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
@@ -189,7 +189,7 @@ export default function DocReview({
         onFix={fixAndApprove}
         onApprove={onApprove}
         onReject={onReject}
-      /> : doc.status === 'approved' ? <div className="p-3"><Btn onClick={()=>openRecord(`DATA-${doc.id}`)}>View saved record</Btn></div> : null}
+      /> : doc.status === 'approved' ? <div className="flex gap-2 p-3"><Btn onClick={()=>openRecord(`DATA-${doc.id}`)}>View saved record</Btn>{doc.id==='hal-nav-08'&&<Btn onClick={()=>{useStore.getState().openFund('HAL');useStore.getState().setFundTab('operations');useStore.getState().setOperationsSection('fees');}}>Review fee reconciliation →</Btn>}</div> : null}
     </div>
   );
 }

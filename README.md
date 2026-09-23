@@ -19,7 +19,7 @@ The older walkthrough below documents the prior interface. Use the linked curren
 **[Presenter practice sheet](DEMO_PRACTICE.md)**
 
 **Presenting from someone else’s computer?** Open the public demo, use **Skip MFA**, then
-open Team workspace. No installation or GitHub account is needed. The sidebar’s **Presenter
+open Today · Team work. No installation or GitHub account is needed. The sidebar’s **Presenter
 guide ↗** opens the practice sheet. Its first section covers the browser-only route, reset,
 projector preparation and fallback material. The external CLI needs a local development server;
 the main walkthrough and built-in agent console work on the public site.
@@ -50,33 +50,40 @@ remember that work and context move together.
 2. Open **http://192.168.28.193:5199/** on your current LAN, or **http://localhost:5199/** on
    the host machine. The LAN address can change when you change networks.
 3. Refresh for a clean demo. Sign in as `a.chan@apexpacific.example`, or use **Skip MFA**.
-4. Open **Team workspace**. Its **Demo role** dropdown switches between PM and Analyst.
+4. Open **Today · Team work**. The workspace selector at the top-left of the rail switches
+   between PM and Analyst.
 5. Use one browser tab for the main demonstration. Each tab has its own demo state.
 
+**Interactive demo:** the login card’s third option, **Interactive demo**, starts a guided
+walkthrough over the real screens — a chapter chooser (daily documents · screening · Silk River
+due diligence · add a fund candidate · portfolio & fees, about 4 minutes) in any order.
+Restart it from **Presenter tools → Restart interactive tour**; refresh resets it.
+**Exit tour** on the coach panel, or `Esc`, leaves the tour and keeps your work.
+
 **Reset:** refreshing clears all changes and returns to login. Changing roles does not reset
-the work. Close an assignment with its top-right × before changing the role in Team.
+the work. Close an assignment with its top-right × before changing the workspace role.
 
 ### Explain the sidebar in 20 seconds
 
 | Place | Your plain-language explanation |
 |---|---|
 | **Today** | “What needs attention now: documents, reviews and follow-ups.” |
-| **Team workspace** | “Who is doing what, and which work needs review.” |
+| **Today · Team work** | “Who is doing what, and which work needs review.” |
 | **Funds** | “Everything we know and do about each invested manager.” |
-| **Pipeline** | “Managers we are considering. They have records before we invest.” |
-| **Book** | “Our allocations and proposed changes.” |
-| **Audit** | “Recent history: who did what.” |
-| **Modules** | “The tools in this platform, and what we could add.” |
+| **Funds → Candidates** | “Managers we are considering. They have records before we invest.” The rail’s **Pipeline** group lists candidates with open work, e.g. Silk River. |
+| **Portfolio** | “Our allocations and proposed changes.” |
+| **All activity** | “Recent history: who did what.” |
+| **Presenter tools → How this demo works** | “The tools in this platform, and what we could add.” |
 
-Hover on the sidebar labels to show these explanations. Team, Today and a fund's **Research &
-work** tab link to the same research/follow-up assignments. The demo also contains older daily
-operations examples in Today; the main story below uses the connected paths.
+Hover on the sidebar labels to show these explanations. Today · Team work and a fund's
+**Research & diligence** tab link to the same research/follow-up assignments. The demo also
+contains older daily operations examples in Today; the main story below uses the connected paths.
 
 ### Main walkthrough — about 6–8 minutes
 
-#### 1. Team: the company's work in one place
+#### 1. Team work: the company's work in one place
 
-**Click:** Team workspace → **Group by: Person**. Hover on L. Wu. Switch back to **Stage**.
+**Click:** Today · Team work → **Group by: Person**. Hover on L. Wu. Switch back to **Stage**.
 
 **Say:** “As a manager, I can see the owners, deadlines, blockers and work awaiting review.
 An analyst has an assignment, almost like submitting coursework in Canvas.”
@@ -91,8 +98,9 @@ An analyst has an assignment, almost like submitting coursework in Canvas.”
 
 #### 2. Silk River: AI research becomes a submitted piece of work
 
-**Click:** set **Demo role → L. Wu · Analyst**. In the sidebar, click **Silk River**.
-In Overview, click **Open screening assignment**.
+**Click:** set the workspace selector at the top-left of the rail to **L. Wu · Analyst**.
+In the sidebar, click **Silk River**. In Overview, click **Open assignment** (the button reads
+**Review submission** when something is awaiting review).
 
 **Show:** the brief, owner, due date and source library. Expand a source, then click
 **Load prepared AI research**. Read a few lines rather than the whole draft.
@@ -109,12 +117,12 @@ standard piece of work with its sources. This can come from the portal or from a
 agent using a command-line tool.”
 
 **Expected result:** status becomes **Needs review**, with L. Wu named as the submitter.
-The record is saved; no investment has been added to the Book.
+The record is saved; no investment has been added to the portfolio.
 
 #### 3. PM review: the next person inherits the context
 
-**Click:** close the assignment → Team → **Demo role → A. Chan · PM** → Silk River →
-**Review screening submission**.
+**Click:** close the assignment → set the workspace selector to **A. Chan · PM** →
+Silk River → **Review submission**.
 
 **Enter this review note:**
 
@@ -141,7 +149,7 @@ now points to the next step of the same assignment flow, rather than creating a 
 
 #### 4. The fund record: organizational memory
 
-**Click:** Silk River → **Research & work**. Open the completed screening assignment and expand
+**Click:** Silk River → **Research & diligence**. Open the completed screening assignment and expand
 its **Submission & decision history**. Then close it and open **History** on the fund page.
 
 **Say:** “The original recommendation, sources, human decision and follow-up stay attached to
@@ -160,34 +168,34 @@ The calculation then follows a fixed formula, and a person checks the result.”
 **The example:** $17.1M × (0.12% − 0.15%) = **−$5,130**. This is a simple comparison of fee
 rates on the same base and period. The July restatement is a separate issue.
 
-**Click:** **Approve**. Go to Team and find **Review the NAV-pack extraction** in **Done**.
+**Click:** **Approve**. Go to Today · Team work and find **Review the NAV-pack extraction** in **Done**.
 
 **What this proves:** document review completes the linked assignment. You can also show the
 invoice's low-confidence GL classification if someone asks how corrections work.
 
-#### 6. Deterministic Book: rules and a real decision point
+#### 6. Deterministic Portfolio: rules and a real decision point
 
-**Click:** Book. Explain that Sable's old NAV causes Rule E to fail at the starting allocation.
+**Click:** Portfolio. Explain that Sable's old NAV causes Rule E to fail at the starting allocation.
 
 **Optional blocked example:** change Northgate to **37,762,500**, then click outside the field.
 Rule A also fails and approval is disabled. Click **Discard**.
 
 **Successful path:** change Sable to **7,125,000**, then click outside the field. This is **5%**.
-The proposed cash balance becomes **17%** and Rules A–E pass. Click **Approve — IC** as PM.
+The proposed cash balance becomes **17%** and Rules A–E pass. Click **Approve allocation** as PM.
 
-**Show:** Team has a new **Review capital instructions · ticket #1** assignment for Operations.
+**Show:** Team work has a new **Review capital instructions · ticket #1** assignment for Operations.
 
 **Say:** “Code handles the arithmetic and checks. A person approves the change. Then software
 creates the next operational task. An approved target allocation is not a settled trade.”
 
-**Close:** hover over **Audit**, then open it to show recent actions by the person, agent and
-software. Open **Modules** briefly: “We can add more tools to this same platform as we need them.”
+**Close:** hover over **All activity**, then open it to show recent actions by the person, agent and
+software. Open **Presenter tools → How this demo works** briefly: “We can add more tools to this same platform as we need them.”
 
 ### If you only have three minutes
 
 Stay signed in as PM for the quick walkthrough (the submission will correctly name A. Chan).
-Show Team → Silk River prepared research → edit → submit → accept with a note → next task.
-Finish with the three mode cards and one sentence about Book's fixed calculations. Skip the
+Show Team work → Silk River prepared research → edit → submit → accept with a note → next task.
+Finish with the three mode cards and one sentence about the Portfolio's fixed calculations. Skip the
 role switch, detailed history and document example.
 
 ### Optional: show an external agent submitting work
@@ -217,13 +225,14 @@ again until a reviewer requests changes.
 
 | What you see | What to do |
 |---|---|
-| Silk River shows “Review screening submission” | Research was already submitted. Continue with the PM review. |
+| Silk River shows “Review submission” | Research was already submitted. Continue with the PM review. |
 | Silk River shows a document task | Screening was already accepted. Open the follow-up, or refresh to restart. |
-| PM review buttons are disabled | Close the assignment; switch Demo role to A. Chan in Team. |
+| PM review buttons are disabled | Close the assignment; switch the workspace selector to A. Chan. |
 | Accept asks for a note | Add the review instruction you want the next person to inherit. |
-| Book approval is still blocked | Discard any earlier bad proposal; set Sable to 7,125,000 and leave the field. Check all rule messages. |
+| Allocation approval is still blocked | Discard any earlier bad proposal; set Sable to 7,125,000 and leave the field. Check all rule messages. |
 | CLI says select a browser | Use the session exports from that assignment's CLI tab. Refreshing creates a new session ID. |
-| You lose track of your place | Refresh, sign in, and restart from Team. |
+| You lose track of your place | Refresh, sign in, and restart from Today · Team work. |
+| The interactive tour is in the way | Press **Exit tour** on the coach panel, or `Esc` — both leave the tour and keep your work. |
 
 ### Be clear about what is real in this prototype
 
@@ -232,11 +241,11 @@ again until a reviewer requests changes.
 - Source-ID checks verify references exist; they do not prove a research conclusion is correct.
 - Data is held in the current browser tab and resets on refresh. Email delivery, document receipt,
   trade execution and multi-user synchronization are not connected.
-- Management fee reconciliation is available in Fees. Incentive fees and the LP portal remain future modules.
+- Management fee reconciliation is available under each fund's Operations → Management fees. Incentive fees and the LP portal remain future modules.
 
 ## What it shows
 
-- **Team workspace** — a Canvas-like submission portal and work board. Group by stage or person;
+- **Team work** — a Canvas-like submission portal and work board. Group by stage or person;
   filter your assignments or reviews. Each assignment has an owner, deadline, brief, sources,
   structured submissions, version history, and a human decision. Hover on people, funds and
   execution-mode badges for context.
@@ -247,27 +256,36 @@ again until a reviewer requests changes.
   Diligence and Operations receives a new assignment carrying the analyst's conditions and the
   reviewer's instructions. Research acceptance never adds an investment to the book.
 - **Today** — the landing view: a split queue of work needing a human (documents, SLA tasks,
-  IC tickets) and the selected item's review surface.
-- **Documents intake** — invoices, NAV packs, and manager emails parsed to schema with
+  IC tickets) and the selected item's review surface. My work is today's decisions; Document
+  intake is the library of record — everything received and saved. The status bar's
+  **Needs attention** count opens the queue it counts.
+- **Document intake** — invoices, NAV packs, and manager emails parsed to schema with
   per-field confidence. Policy toggle `AUTO`/`MANUAL`; high-confidence docs get a quick
   approve/reject, everything else opens **assisted review**: the original document with
   highlight overlays synced to editable extracted fields, the AI's reasoning, and an
   Approve / Fix-and-approve / Reject-with-reason triad.
 - **Fund pages** — one page per manager: overview, exposure, documents, **field-level change
-  history** (who, when, old → new, checksum), and signed diligence verdicts.
-  **Research & work** shows the same assignments and decisions as Team.
-- **Book** — allocations edited in **dollars** (percent derived), cash absorbs the residual,
-  and five deterministic invariants (A–E) judge every change in money language. A pasted raw
-  agent proposal (Σ 101.3%) gets staged and BLOCKED by the engine.
+  history** (who, when, old → new, checksum), and signed diligence verdicts
+  (**Sign diligence assessment**).
+  **Research & diligence** shows the same assignments and decisions as Team work.
+- **Portfolio** — allocations edited in **dollars** (percent derived), cash absorbs the residual,
+  and five deterministic invariants (A–E) judge every change in money language. The
+  **Contribution** column shows each holding's share of return (weight × YTD). The demo lever
+  **Stage seeded agent proposal (demo)** pastes a raw agent proposal (Σ 101.3%) that gets staged
+  and BLOCKED by the system.
 - **Human-in-the-loop everywhere** — every actionable item can be inspected, edited, approved,
   or rejected with a reason; approvals that touch the book are PM-gated and re-validated at
   commit.
-- **Audit** — actor-filtered, checksum-chained trail, a report register, and an LP DDQ §7
+- **All activity** — actor-filtered, checksum-chained trail, a report register, and an LP DDQ §7
   print export.
-- **Shell** — the same rails for agents: every UI form echoes as a command; gated verbs
-  (triage, approve, verdict) refuse agents.
-- **Modules** — the skeleton made visible: what's Live vs Slot (fee engine, LP portal), and a
-  vacant CHK-11 row: *checks are data — add one without changing the app.*
+- **Shell** — the same rails for agents: every UI form echoes as a command. `screen extract --now`,
+  `screen add "…"` and `agent demo` are in-app demo triggers only. Every human lever —
+  ops parse/reconcile/ack/queue-fx/escalate/open-pack, today approve/reject, docs approve/reject/edit,
+  tasks draft/update/review, book set / book stage --from=edit / book approve / book discard,
+  screen triage, dd verdict, fee approve, criteria apply, policy intake, monitor assess — echoes
+  as a receipt and returns BLOCKED + an audit entry to agents.
+- **Presenter tools → How this demo works** — the skeleton made visible: what's Live vs Slot
+  (fee engine, LP portal), and a vacant CHK-11 row: *checks are data — add one without changing the app.*
 
 ## Run it
 
@@ -277,20 +295,37 @@ npm run dev        # http://localhost:5199/
 ```
 
 - Fallback: `npm run build && npm run preview`
-- **Login:** `a.chan@…` (**PM**) or `l.wu@…` (**Analyst**) — any password, or skip MFA.
+- **Login:** `a.chan@…` (**PM**) or `l.wu@…` (**Analyst**) — any password, skip MFA, or the **Interactive demo** guided tour.
 - **LAN:** Vite binds to all interfaces. Use `http://<this-machine-IP>:5199/`.
-- **Demo role:** switch PM / Analyst in the sidebar or Team. Refresh resets the in-memory demo.
+- **Workspace role:** switch PM / Analyst with the workspace selector at the top-left of the rail. Refresh resets the in-memory demo.
 
 ## Agent access (local demo)
 
 Run commands from this directory while a browser is signed in to `npm run dev`:
 
 ```bash
+node scripts/apex.mjs whoami
+node scripts/apex.mjs help
+node scripts/apex.mjs history
+node scripts/apex.mjs today queue
 node scripts/apex.mjs tasks list
 node scripts/apex.mjs tasks get A-101
 node scripts/apex.mjs tasks submit A-101 --json=examples/research.json
+node scripts/apex.mjs funds list
 node scripts/apex.mjs funds get SIL
+node scripts/apex.mjs funds add --json=examples/candidate.json
+node scripts/apex.mjs docs list
+node scripts/apex.mjs docs get <id>
+node scripts/apex.mjs records list
+node scripts/apex.mjs records get <id>
+node scripts/apex.mjs screening get
+node scripts/apex.mjs screening list
+node scripts/apex.mjs fees get HAL
+node scripts/apex.mjs monitoring get
+node scripts/apex.mjs dd get SAB
 node scripts/apex.mjs book get
+node scripts/apex.mjs book propose --json=book.json
+node scripts/apex.mjs book paste --raw
 node scripts/apex.mjs audit tail 10
 ```
 
@@ -305,9 +340,11 @@ session. `node scripts/apex.mjs sessions` lists connected browsers. Use `--sessi
 several are open, and `--url=http://<host>:5199` to target another machine. These also have
 `APEX_SESSION` and `APEX_URL` environment-variable equivalents.
 
-Additional commands: `funds list`, `docs list`, `docs get <id>`,
-`book propose --json=book.json` (all portfolio fund IDs and CASH, percentage weights).
-The agent can stage proposals but cannot review submissions or approve investments.
+`book propose` requires a JSON payload (`--json=book.json`: all portfolio fund IDs and CASH,
+percentage weights); `book paste --raw` stages the seeded raw proposal (Σ 101.3%) for a human to
+judge, and bare `book propose` with no payload errors instead of staging anything. The agent can
+stage proposals but cannot review submissions or approve investments. The full command reference
+and the UI ↔ CLI parity table are in [AGENT_DEMO.md](AGENT_DEMO.md).
 
 The local HTTP bridge transports commands into the selected browser's actual store. It is a
 dev-only demo transport, not a persistent backend; each browser has independent state. Static
@@ -324,12 +361,15 @@ rm -rf node_modules/.vite && npm run dev -- --force
 | Key | Action |
 |---|---|
 | `1` | Today (landing) |
-| `2` | Book |
-| `3` | Audit sheet |
-| `4` | Team workspace |
+| `2` | Portfolio |
+| `3` | All activity |
+| `4` | Team work (Today · Team work) |
 | `` ` `` | Shell |
 | `⌘K` / `Ctrl+K` | Command palette |
 | `Esc` | Closes everything |
+
+While the interactive tour is running, keys `1`–`4` and `` ` `` are disabled; `Esc` exits the
+tour first (then closes any open overlays).
 
 ## Architecture
 
@@ -341,14 +381,14 @@ rm -rf node_modules/.vite && npm run dev -- --force
 - `src/lib/fees.ts` — deterministic same-period fee-rate comparison.
 - `src/lib/rules.ts` — deterministic invariants (A ≤25% · B sleeve ≤35% · C cash ≥10% · D Σ=100±0.05 · E stale>30d→≤5%). `validateBook` runs at stage and commit. Zero model calls.
 - `src/lib/store.ts` — one zustand store: book/gate, docs, queue, audit (tagged, checksum-chained, advancing clock), entity history, shell transcript + `emitCmd` (form↔command parity), PM/Analyst gates.
-- `src/lib/verbs.ts` — command registry (help + palette + `FENCE`). Gated verbs refuse agents.
+- `src/lib/verbs.ts` — command registry (cli / shell-demo / form-receipt / human-gated flags). Gated verbs refuse agents.
 - `src/lib/docs.ts` — intake eligibility (overall ≥0.90 and every required field ≥0.85) and field helpers.
 - `src/lib/dd.ts` — CHK-01..10 diligence table, claim-vs-computed flags, pack/SLA state.
 - `src/lib/types.ts` — `DocRecord`, views, fund tabs, intake policy, reject reasons.
 - `src/data/seed.ts` — funds, books, documents, clock-sensitive boot numbers.
 - `src/App.tsx` — shell, keys, `parityCheck` (dev-console assertion).
 - `src/index.css` — Tailwind v4 `@theme` paper-and-ink tokens; IBM Plex Sans / Mono.
-- `src/components/` — `Rail.tsx`, `StatusBar.tsx`, `Today.tsx`, `FundPage.tsx`, `Portfolio.tsx` (Book), `DocReview.tsx` / `DocOriginal.tsx`, `HitlTriad.tsx`, `ModulesSheet.tsx`, `Login.tsx`, `Shell.tsx`, `Palette.tsx`, `Drawers.tsx` (Audit sheet + LP DDQ print), `Ui.tsx` (Radix/cva primitives).
+- `src/components/` — `Rail.tsx`, `StatusBar.tsx`, `Today.tsx`, `FundPage.tsx`, `Portfolio.tsx` (allocations), `DocReview.tsx` / `DocOriginal.tsx`, `HitlTriad.tsx`, `ModulesSheet.tsx`, `Login.tsx`, `Shell.tsx`, `Palette.tsx`, `Drawers.tsx` (Audit sheet + LP DDQ print), `Ui.tsx` (Radix/cva primitives).
 
 ## Guardrails
 

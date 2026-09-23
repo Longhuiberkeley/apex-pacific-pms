@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStore } from '../lib/store';
-import { VERBS, FENCE } from '../lib/verbs';
+import { FENCE, helpLines } from '../lib/verbs';
 import { cn } from '../lib/cn';
 import { executeAgentCommand } from '../lib/agent';
 
@@ -22,18 +22,12 @@ export default function Shell() {
   const closeAllOverlays = useStore((s) => s.closeAllOverlays);
   const lines = useStore((s) => s.shellLines);
   const shellPrint = useStore((s) => s.shellPrint);
-  const emitCmd = useStore((s) => s.emitCmd);
   const pushAudit = useStore((s) => s.pushAudit);
-  const screener = useStore((s) => s.screener);
   const addCandidate = useStore((s) => s.addCandidate);
   const extractRun = useStore((s) => s.extractRun);
-  const stage = useStore((s) => s.stage);
-  const book = useStore((s) => s.book);
   const audit = useStore((s) => s.audit);
   const identity = useStore((s) => s.identity);
-  const setTab = useStore((s) => s.setTab);
   const agentDemo = useStore((s) => s.agentDemo);
-  const pasteAgentProposal = useStore((s) => s.pasteAgentProposal);
   const [cmd, setCmd] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -56,13 +50,8 @@ export default function Shell() {
     if (!c) return;
     P(`apex$ ${c}`);
     const [verb, ...rest] = c.split(/\s+/);
-    if (['tasks', 'funds', 'docs', 'records', 'screening'].includes(verb) || (verb === 'book' && rest[0] === 'get')) {
-      const result = executeAgentCommand(c);
-      P(`${result.ok ? '✓' : '⛔'} ${result.message ?? 'Record retrieved'}`);
-      if (result.data) P(JSON.stringify(result.data, null, 2));
-    } else if (verb === 'help') {
-      P('every verb maps to a form, a row, or a lever — forms echo back here:');
-      VERBS.forEach((v) => P(`  ${v.cmd.padEnd(30)} ${v.desc}${v.gate ? '  ⚠ ' + v.gate : ''}`));
+    if (verb === 'help') {
+      helpLines().forEach((l) => P(l));
     } else if (verb === 'whoami') {
       P(identity ? `shell session — acting as agent (fenced) · signed-in human: ${identity.name} (${identity.role})` : 'no session');
       P('gated verbs (triage / weights / packs / verdicts / approvals) refuse agents — human-only levers.');
@@ -70,8 +59,6 @@ export default function Shell() {
       const hist = lines.filter((l) => l.startsWith('apex$') || l.startsWith('»'));
       if (!hist.length) P('nothing yet — click anything in the UI, or run `agent demo`');
       hist.forEach((l) => P(l));
-    } else if (verb === 'screen' && rest[0] === 'list') {
-      screener.forEach((x) => P(`${x.id}  ${x.name.padEnd(24)} ${x.status.padEnd(7)} score ${x.score ?? '—'}`));
     } else if (verb === 'screen' && rest[0] === 'extract') {
       const r = extractRun();
       P(r.ok ? `✓ ${r.msg}` : `⛔ ${r.msg}`);
@@ -81,7 +68,7 @@ export default function Shell() {
       const r = addCandidate(name, 'shell');
       P(r.ok ? `✓ ${r.msg}` : `⛔ ${r.msg}`);
     } else if (verb === 'screen' && rest[0] === 'triage') {
-      blocked('agents may never change triage (fence line). a human triages in the pipeline.', `triage ${rest[1] ?? ''}`);
+      blocked('triage is a human lever — in Funds → Candidate screening', `triage ${rest[1] ?? ''}`);
     } else if (verb === 'book' && rest[0] === 'approve') {
       blocked('the IC lever is human-only. a PM approves in Book.', 'book approve');
     } else if (verb === 'dd' && rest[0] === 'verdict') {
@@ -90,19 +77,13 @@ export default function Shell() {
       const parsed = Number(rest[1] ?? 5);
       const n = Number.isFinite(parsed) && parsed > 0 ? Math.min(Math.floor(parsed), 50) : 5;
       audit.slice(-n).forEach((a) => P(`${a.t} [${a.actor}] ${a.action}  #${a.h}`));
-    } else if (verb === 'book' && (rest[0] === 'paste' || (rest[0] === 'propose' && rest.includes('--raw')))) {
-      pasteAgentProposal('shell');
-      P('✓ pasted raw agent book Σ 101.3 → Book · BLOCKED A/C/D/E');
-    } else if (verb === 'book' && rest[0] === 'propose') {
-      stage({ ...book });
-      setTab('construct');
-      P('✓ staged proposal → Book gate up · AWAITING HUMAN (shell never commits)');
-      pushAudit('AGENT', 'book propose via shell — staged, awaiting human', '', 'PORT');
-      emitCmd('book propose', 'shell');
     } else if (verb === 'agent' && rest[0] === 'demo') {
       agentDemo();
     } else {
-      P(`unknown: ${c} — try help`);
+      // Everything else is the shared contract — same handler as the external CLI.
+      const result = executeAgentCommand(c);
+      P(`${result.ok ? '✓' : '⛔'} ${result.message ?? 'Record retrieved'}`);
+      if (result.data) P(JSON.stringify(result.data, null, 2));
     }
     setCmd('');
   };

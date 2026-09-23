@@ -91,6 +91,8 @@ interface State {
   setOperationsSection: (section: 'reporting' | 'fees') => void;
   todayMode: 'mine' | 'team' | 'intake';
   setTodayMode: (mode: 'mine' | 'team' | 'intake') => void;
+  fundsFilter: 'Candidates' | 'Invested' | 'All';
+  setFundsFilter: (f: State['fundsFilter']) => void;
   feeReviews: FeeReview[];
   approveFee: (inputs: FeeInputs, note: string) => WorkResult;
   runMonitoring: (fundId?:string) => void;
@@ -148,6 +150,11 @@ interface State {
   extractRuns: number;
   shellLines: string[];
   entityAudit: { id: string; label: string } | null;
+  tourActive: boolean;
+  tourChapter: string | null;
+  tourStep: number;
+  tourSkipped: string[];
+  tourDone: string[];
 
   login: (email: string) => void;
   logout: () => void;
@@ -194,6 +201,13 @@ interface State {
   shellPrint: (s: string) => void;
   emitCmd: (cmd: string, via: Via) => void;
   closeAllOverlays: () => void;
+  startTour: () => void;
+  openTourChapter: (id: string | null) => void;
+  tourNext: (done?: boolean) => void;
+  tourBack: () => void;
+  skipTourChapter: () => void;
+  exitTour: () => void;
+  restartTour: () => void;
 }
 
 export const useStore = create<State>((set, get) => ({
@@ -201,6 +215,8 @@ export const useStore = create<State>((set, get) => ({
   setOperationsSection: (operationsSection) => set({operationsSection}),
   todayMode: 'mine',
   setTodayMode: (todayMode) => set({todayMode,view:'today'}),
+  fundsFilter: 'Candidates',
+  setFundsFilter: (fundsFilter) => set({fundsFilter}),
   feeReviews: [],
   approveFee: (inputs,note) => {
     const who = get().identity;
@@ -214,6 +230,7 @@ export const useStore = create<State>((set, get) => ({
     const record: FeeReview={id:`FEE-${get().feeReviews.length+1}`,inputs:structuredClone(inputs),expected:result.expected,variance:result.variance,days:result.days,note:note.trim(),reviewer:who.name,at:now(),sources:sources.map(r=>r!.id),access:'PM'};
     set(s=>({feeReviews:[...s.feeReviews,record]}));
     get().pushAudit('YOU', `Approved reconciliation ${record.id}`, 'PM-only reconciliation saved; no payment sent', 'HAL');
+    get().emitCmd(`fee approve HAL --review=${record.id}`,'form');
     return {ok:true,message:'Reconciliation saved with its approved source records.'};
   },
   runMonitoring: (fundId) => {
@@ -237,6 +254,7 @@ export const useStore = create<State>((set, get) => ({
     if (!get().identity || !validCriteria(criteria)) return;
     set({ criteria: structuredClone(criteria) });
     get().pushAudit('YOU', 'Applied screening criteria', JSON.stringify(criteria));
+    get().emitCmd('criteria apply','form');
   },
   startResearch: (fundId) => {
     const fund = get().screener.find(f => f.id === fundId);
@@ -360,6 +378,11 @@ export const useStore = create<State>((set, get) => ({
     'every form you click in the UI echoes here as a command — the shell is the receipt.',
   ],
   entityAudit: null,
+  tourActive: false,
+  tourChapter: null,
+  tourStep: 0,
+  tourSkipped: [],
+  tourDone: [],
 
   login: (email) => {
     const e = email.trim().toLowerCase();
@@ -375,6 +398,7 @@ export const useStore = create<State>((set, get) => ({
       view: tab === 'construct' ? 'book' : tab === 'dd' ? 'fund' : 'today',
       ...(tab === 'dd' ? { fundId: get().ddSel } : {}),
     }),
+  // setView alias table (kept for scripts/verify-demo.mjs): 'team'→today+Team work, 'library'→today+intake, 'screening'→funds, 'fees'→HAL operations/fees, 'monitoring'→fundId operations/reporting.
   setView: (view) => {
     if (view==='team') { set({view:'today',todayMode:'team'}); return; }
     if (view==='library') { set({view:'today',todayMode:'intake',librarySelection:null}); return; }
@@ -481,7 +505,7 @@ export const useStore = create<State>((set, get) => ({
     get().setView('book');
     get().pushAudit('AGENT', 'pasted agent proposal — Σ 101.3 staged', 'A/C/D/E', 'PORT');
     get().emitCmd('book paste --raw', via);
-    toast.message('agent proposal staged — Σ 101.3');
+    toast.message('agent proposal staged — total 101.3%');
   },
 
   pushAudit: (actor, action, detail = '', tag, hist) =>
@@ -566,7 +590,7 @@ export const useStore = create<State>((set, get) => ({
       source: doc.id,
     });
     get().emitCmd(`docs approve ${id}`, 'form');
-    toast.success('Approved record saved', { description: record.title, action: { label: 'View saved record', onClick: () => get().openRecord(record.id) } });
+    toast.success('Approved record saved', { description: record.title, action: id === 'hal-nav-08' ? { label: 'Review fee reconciliation', onClick: () => { get().openFund('HAL'); get().setFundTab('operations'); get().setOperationsSection('fees'); } } : { label: 'View saved record', onClick: () => get().openRecord(record.id) } });
   },
 
   rejectDoc: (id, reason, note = '') => {
@@ -829,6 +853,18 @@ export const useStore = create<State>((set, get) => ({
     }),
   closeAllOverlays: () =>
     set({ auditOpen: false, shellOpen: false, ddqOpen: false, paletteOpen: false, entityAudit: null, modulesOpen: false, policyOpen: false, assignmentId: null }),
+  // Tour slice — startTour is PM because 3 chapters end in a PM-only decision; exitTour deliberately skips closeAllOverlays so the panel survives overlay cleanup.
+  startTour: () => { get().login('a.chan@apexpacific.example'); set({ tourActive: true, tourChapter: null, tourStep: 0, tourSkipped: [], tourDone: [] }); },
+  openTourChapter: (id) => set({ tourChapter: id, tourStep: 0 }),
+  tourNext: (done) => set((s) => {
+    const ch = s.tourChapter;
+    if (done && ch) return { tourChapter: null, tourStep: 0, tourDone: s.tourDone.includes(ch) ? s.tourDone : [...s.tourDone, ch], tourSkipped: s.tourSkipped.filter((x) => x !== ch) };
+    return { tourStep: s.tourStep + 1 };
+  }),
+  tourBack: () => set((s) => ({ tourStep: Math.max(0, s.tourStep - 1) })),
+  skipTourChapter: () => set((s) => (s.tourChapter ? { tourChapter: null, tourStep: 0, tourSkipped: s.tourSkipped.includes(s.tourChapter) ? s.tourSkipped : [...s.tourSkipped, s.tourChapter] } : {})),
+  exitTour: () => set({ tourActive: false, tourChapter: null }),
+  restartTour: () => set({ tourActive: true, tourChapter: null, tourStep: 0 }),
 }));
 
 export function openApprovals(s: Pick<State, 'queue' | 'trigAssessed' | 'gateOpen' | 'docs'>): number {

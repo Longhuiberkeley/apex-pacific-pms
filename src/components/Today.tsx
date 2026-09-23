@@ -149,7 +149,7 @@ export default function Today() {
           </div>
         </div>
         <button onClick={() => setView('team')} className="border-b border-line bg-ai/5 px-3 py-3 text-left text-[12px] text-ai hover:bg-ai/10"><span className="block font-medium">Open team assignments ↗</span><span className="mt-1 block">{assignments.filter((a) => a.status === 'Needs review').length} submissions awaiting human review</span></button>
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div data-tour="today.queue" className="min-h-0 flex-1 overflow-y-auto">
           {filter !== 'docs' && teamFollowUps.length > 0 && (
             <section className="border-b border-line bg-ai/[0.03]">
               <h2 className="px-3 pt-3 text-[12px] font-medium text-muted">Your assignments & reviews</h2>
@@ -341,7 +341,7 @@ export default function Today() {
             <h2 className="text-lg font-semibold">Sable Creek — August NAV report is overdue</h2>
             <p className="text-sm text-muted">The latest NAV is dated 31 July. Operations is waiting for the administrator’s August report. The outdated NAV also limits the permitted portfolio allocation.</p>
             <p className="text-sm">Research owner: L. Wu · Reviewer: A. Chan</p>
-            <div className="flex gap-3"><Btn onClick={()=>{useStore.getState().runMonitoring('SAB');openAssignment('MON-SAB');}}>Open investigation</Btn><Btn onClick={()=>{openFund('SAB');useStore.getState().setFundTab('operations');}}>View fund operations</Btn></div>
+            <div className="flex gap-3"><Btn onClick={()=>{useStore.getState().runMonitoring('SAB');assessSable();openAssignment('MON-SAB');}}>Open investigation</Btn><Btn onClick={()=>{openFund('SAB');useStore.getState().setFundTab('operations');}}>View fund operations</Btn></div>
           </div>
         )}
 
@@ -467,7 +467,7 @@ function BrokerPane({
         {reconciled && (
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => openFund('HAL')}
+              onClick={() => { openFund('HAL'); useStore.getState().setFundTab('operations'); useStore.getState().setOperationsSection('fees'); }}
               className="rounded border border-line bg-surface px-2 py-1 text-[12px] text-ink hover:bg-paper"
             >
               Fee discrepancy → Halcyon

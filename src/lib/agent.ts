@@ -1,8 +1,13 @@
 import { canRead, canReadWork, provenance } from './records';
 import { evaluate, validateMetrics } from './screening';
-import { useStore } from './store';
+import { useStore, openApprovals } from './store';
 import { BookSchema, validateBook } from './rules';
 import { SILK_DRAFT } from './work';
+import { isEligible } from './docs';
+import { reconcileFee } from './fees';
+import { ddState, openFlags, DD_CHECKS, chkFor } from './dd';
+import { FENCE, FORM_GATED, VERBS, helpGroups } from './verbs';
+import { AGENT_BOOK_A, daysSince } from '../data/seed';
 
 export interface AgentResult { ok: boolean; message?: string; data?: unknown }
 
@@ -11,10 +16,15 @@ export function executeAgentCommand(command: string, payload?: unknown, via: 'sh
   const s = useStore.getState();
   if (!s.identity) return { ok: false, message: 'Sign in to the demo browser first.' };
   const [resource, action, id, ...flags] = command.trim().split(/\s+/);
-  if (['approve', 'review', 'update', 'verdict', 'triage'].includes(action)) {
+  // One gate for every human lever: action tokens and the two-token prefix of every form receipt.
+  if (['approve', 'review', 'update', 'verdict', 'triage'].includes(action) || FORM_GATED.includes(`${resource} ${action}`)) {
     s.pushAudit('AGENT', `BLOCKED ${command} via ${via}`, 'Human decision required');
-    return { ok: false, message: 'This decision belongs to a human in the platform. Agents may read, submit research and stage proposals.' };
+    return { ok: false, message: ['approve', 'reject', 'review', 'verdict', 'triage'].includes(action) ? 'This decision belongs to a human in the platform. Agents may read, submit research and stage proposals.' : ['update', 'draft', 'edit'].includes(action) ? 'Activity notes are recorded by the task assignee in the platform; agents may read tasks and submit research.' : 'This lever is operated by a human in the platform UI; agents may read state and stage proposals.' };
   }
+  if (resource === 'help') return { ok: true, data: helpGroups() };
+  if (resource === 'whoami') return { ok: true, data: { signedIn: s.identity ? { name: s.identity.name, email: s.identity.email, role: s.identity.role } : null, actingAs: 'external agent', via, fence: FENCE, writes: ['tasks submit', 'funds add', 'book propose'], gated: ['tasks review', 'docs approve', 'docs reject', 'screen triage', 'dd verdict', 'book approve', 'today approve', 'fee approve', 'criteria apply'], note: 'Reads follow the signed-in browser role.' } };
+  if (resource === 'history') return { ok: true, data: { lines: s.shellLines.filter((l) => l.startsWith('apex$') || l.startsWith('»')).slice(-20) } };
+  if ((resource === 'today' && action === 'queue') || (resource === 'queue' && action === 'list')) return { ok: true, data: { openApprovals: openApprovals(s), intakePolicy: s.intakePolicy, gateOpen: s.gateOpen, queue: s.queue.map(({ wid, origin, title, draft, done, rid, rejected }) => ({ wid, origin, title, draft, done, rid, rejected })), pendingDocs: s.docs.filter((d) => d.status === 'pending' && canRead(s.identity, d)).map((d) => ({ id: d.id, title: d.title, fundId: d.fundId, overall: d.overall, quickEligible: isEligible(d) })), triggers: { sableAssessed: s.trigAssessed, linkConfirmed: s.linkConfirmed }, broker: { parsed: s.brokerParsed, reconciled: s.reconciled, fxQueued: s.fxQueued } } };
   if (resource === 'tasks') {
     if (action === 'list') return { ok: true, data: s.assignments.filter(a=>canReadWork(s.identity,a,s.docs)).map(({ draft, sources, revisions, ...a }) => ({ ...a, submissionCount: revisions.length })) };
     if (action === 'get') {
@@ -57,11 +67,29 @@ export function executeAgentCommand(command: string, payload?: unknown, via: 'sh
     if (action === 'list') return {ok:true,data:records};
     if (action === 'get') { const record=records.find(r=>r.id===id); return record?{ok:true,data:record}:{ok:false,message:'Record unavailable for this role.'}; }
   }
-  if (resource === 'screening' && action === 'get') return {ok:true,data:{criteria:s.criteria,results:s.screener.map(f=>({id:f.id,name:f.name,...evaluate(f.metrics,s.criteria)}))}};
+  if ((resource === 'screening' || resource === 'screen') && action === 'list') return {ok:true,data:{pipeline:s.screener.map(f=>({id:f.id,name:f.name,status:f.status,score:f.score,metricSource:f.metricSource??null,metricAsOf:f.metricAsOf??null}))}};
+  if (resource === 'screening' && action === 'get') return {ok:true,data:{criteria:s.criteria,results:s.screener.map(f=>({id:f.id,name:f.name,metricSource:f.metricSource??null,metricAsOf:f.metricAsOf??null,metrics:f.metrics??null,...evaluate(f.metrics,s.criteria)}))}};
+  if (resource === 'fees' && action === 'get') {
+    const reviews = s.feeReviews.filter(r=>canRead(s.identity,r)).map(({id,expected,variance,days,note,reviewer,at})=>({id,expected,variance,days,note,reviewer,at}));
+    if (id !== 'HAL') return {ok:true,data:{fundId:id??null,ready:false,inputs:null,reviews:[],reason:'No fee invoice and approved terms are on file for this fund yet.'}};
+    const recs = ['hal-nav-08','terms-hal','fee-invoice-hal'].map(docId=>s.records.find(r=>r.docId===docId));
+    const sources = ['hal-nav-08','terms-hal','fee-invoice-hal'].map(docId=>{const r=s.records.find(r=>r.docId===docId);return {docId,recordId:r?.id??null,access:r?.access??'team',present:!!r&&canRead(s.identity,r)}});
+    const permitted = recs.every(r=>!r||canRead(s.identity,r));
+    const ready = recs.every(Boolean) && permitted;
+    const inputs = recs.every(Boolean) && permitted ? {nav:Number(recs[0]!.values.nav_usd??0),annualRate:Number(recs[1]!.values.annual_rate_pct??0),start:String(recs[2]!.values.period_start??''),end:String(recs[2]!.values.period_end??''),invoiced:Number(recs[2]!.values.amount_usd??0)} : null;
+    return {ok:true,data:{fundId:'HAL',ready,restricted:!permitted,sources,inputs,computed:inputs?reconcileFee(inputs):null,reviews}};
+  }
+  if (resource === 'monitoring' && action === 'get') return {ok:true,data:{thresholdDays:30,checks:s.funds.filter(f=>!id||f.id===id).map(f=>{const ageDays=daysSince(f.asOf);const a=s.assignments.find(a=>a.id===`MON-${f.id}`);return {fundId:f.id,name:f.name,navAsOf:f.asOf,ageDays,result:!f.asOf?'Needs evidence':ageDays>30?'Breach':'Pass',investigation:a?{id:a.id,status:a.status,owner:a.owner,reviewer:a.reviewer}:null}})}};
+  if (resource === 'dd' && action === 'get') return {ok:true,data:{state:ddState(id).s,why:ddState(id).why,flags:openFlags(id),checks:DD_CHECKS.map(c=>({id:c.id,name:c.name,...chkFor(id,c.id)})),verdict:s.ddVerdicts[id]??null}};
   if (resource === 'book') {
     if (action === 'get') return { ok: true, data: { committed: s.book, proposed: s.staged, violations: validateBook(s.staged ?? s.book, s.funds) } };
+    if (action === 'paste' || (action === 'propose' && (id === '--raw' || flags.includes('--raw')))) {
+      s.pasteAgentProposal(via);
+      return { ok: true, message: 'staged raw agent book Σ 101.3; awaiting human', data: { violations: validateBook(AGENT_BOOK_A, s.funds) } };
+    }
     if (action === 'propose') {
-      const checked = BookSchema.safeParse(payload ?? s.book);
+      if (payload === undefined) return { ok: false, message: 'Provide book JSON (--json=book.json). In the demo console: book paste --raw stages the seeded raw proposal.' };
+      const checked = BookSchema.safeParse(payload);
       if (!checked.success) return { ok: false, message: 'Book must be a JSON object of fund IDs to numeric percentage weights.' };
       const keys = [...s.funds.map((f) => f.id), 'CASH'];
       if (Object.keys(checked.data).length !== keys.length || keys.some((k) => !(k in checked.data)) || Object.entries(checked.data).some(([k, v]) => !keys.includes(k) || !Number.isFinite(v) || v < 0)) return { ok: false, message: 'Include every portfolio fund and CASH, with finite, non-negative weights.' };
@@ -75,5 +103,5 @@ export function executeAgentCommand(command: string, payload?: unknown, via: 'sh
     const count = Math.min(50, Math.max(1, Number(id) || 10));
     return { ok: true, data: s.audit.slice(-count) };
   }
-  return { ok: false, message: 'Available: tasks list|get|submit, funds list|get|add, docs list|get, records list|get, screening get, book get|propose, audit tail. Research JSON uses recommendation, rationale, risks, conditions and sources.' };
+  return { ok: false, message: `unknown command: ${command} — try help.\nCLI verbs: ${VERBS.filter((v) => v.via === 'cli').map((v) => v.cmd).join(', ')}\nin-app demo only (run in the shell or ⌘K palette): ${VERBS.filter((v) => v.via === 'shell').map((v) => v.cmd).join(', ')}\nhuman levers echoed as receipts (BLOCKED + audit for agents): ${FORM_GATED.join(', ')}\nDid you mean: screening get · screening list · funds list · today queue · fees get · monitoring get · dd get · whoami` };
 }

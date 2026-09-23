@@ -22,7 +22,7 @@ Use the suggested words as prompts; rewrite them in your own voice.
    separate tab. Keep only one copy of the demo itself open.
 4. Check zoom and projector readability, then follow sections 3 and 4 below. The main walkthrough
    works entirely in the public site: research, editing, submissions, role switching, reviews,
-   task handoffs, document review, Book and Audit.
+   task handoffs, document review, Portfolio and All activity.
 5. To illustrate agent submission without installing anything, use the built-in console:
    open the backtick button at the bottom of the sidebar and run `tasks get A-101`, then
    `tasks submit A-101 --example` on a fresh assignment. This uses prepared research and the
@@ -74,8 +74,9 @@ npm run dev
   another port, use the URL it actually prints, including that port.
 - Sign in with **a.chan@apexpacific.example**, or use **Skip MFA** for the default PM account.
 
-**Refresh = reset.** All edits and submissions disappear, and login returns. Changing roles in
-Team preserves the work. Each browser tab has independent state, so use one tab for the demo.
+**Refresh = reset.** All edits and submissions disappear, and login returns. Changing roles
+with the workspace selector preserves the work. Each browser tab has independent state, so use
+one tab for the demo.
 
 ## 3. First look — do this before trying to present
 
@@ -84,26 +85,36 @@ Give yourself 10–15 minutes without a timer. Do not approve anything on this f
 | Open | What to notice |
 |---|---|
 | **Today** | A daily action desk: documents, reviews and follow-ups. Click the Halcyon NAV pack to see the source next to extracted fields. |
-| **Team workspace** | Assignments with owners and stages. Change **Group by** from Stage to Person, then back. Hover on a person. |
-| **Pipeline → Silk River** | A prospective investment. Its **Next step** points to the current assignment. Open it, look at the brief and source library, then close it with ×. |
-| **Silk River → Research & work** | The same assignments, attached to the manager’s permanent record. |
-| **Book** | Allocations and proposed changes. Sable starts above the allowed allocation for a stale NAV, so Rule E is already failing. |
-| **Audit** | Recent history: who did what. Hover over the sidebar label, then open it. |
-| **Modules** | The tools in the platform and examples of future additions. |
+| **Team work** (Today → Team work) | Assignments with owners and stages. Change **Group by** from Stage to Person, then back. Hover on a person. |
+| **Funds → Candidates → Silk River** | A prospective investment. Its **Next action** points at the current assignment. Open it, look at the brief and source library, then close it with ×. |
+| **Silk River → Research & diligence** | The same assignments, attached to the manager’s permanent record. |
+| **Portfolio** | Allocations and proposed changes. Sable starts above the allowed allocation for a stale NAV, so Rule E is already failing. |
+| **All activity** | Recent history: who did what. Hover over the sidebar label, then open it. |
+| **Presenter tools → How this demo works** | The tools in the platform and examples of future additions. |
 
 The map in one sentence:
 
-> **Today shows what needs attention; Team shows who owns it; the fund page holds its context;
-> Book holds allocations; Audit records the actions; Modules explains the platform’s tools.**
+> **Today shows what needs attention; Team work shows who owns it; the fund page holds its
+> context; Portfolio holds allocations; All activity records the actions; Presenter tools
+> explains the platform’s tools.**
 
 The demo has some older daily-operation examples in Today. Follow the connected route below
 for the main presentation. After exploring, **refresh** so rehearsal starts from a known state.
 
+### Quick route: the Interactive demo tour
+
+On the login card, the third option — **Interactive demo** — starts a guided walkthrough over the
+real screens. A chapter chooser offers five chapters (daily documents · screening · Silk River
+due diligence · add a fund candidate · portfolio & fees) in any order, ~4 minutes end to end with
+a timebox on each chapter (~30–90 s). Every decision stays with you. Restart the tour from
+**Presenter tools → Restart interactive tour**; refresh resets it. **Exit tour** on the coach
+panel, or Esc, leaves the tour and keeps your work.
+
 ## 4. Main rehearsal — about 6–8 minutes
 
-### A. Team: introduce the workplace
+### A. Team work: introduce the workplace
 
-**Click:** sign in → Team workspace → Group by **Person** → back to **Stage**.
+**Click:** sign in → Today · Team work → Group by **Person** → back to **Stage**.
 
 **Say:** “The manager sees who is doing what, what is blocked, and what needs review. Analysts
 have assignments and submit their work, a bit like Canvas.”
@@ -116,8 +127,9 @@ Point to the three mode cards:
 
 ### B. Silk River: the analyst submits AI-assisted research
 
-1. In Team’s **Demo role** dropdown, choose **L. Wu · Analyst**.
-2. Click **Silk River** under Pipeline → **Open screening assignment**.
+1. In the workspace selector at the top-left of the rail, choose **L. Wu · Analyst**.
+2. **Funds → Candidates → Silk River → Open assignment** (the button reads **Review submission**
+   when something is awaiting review).
 3. Expand a source in the **Source library**.
 4. Click **Load prepared AI research**.
 5. Edit **Conditions & follow-up** to:
@@ -135,8 +147,8 @@ with its sources. Research could also be done by an external agent and submitted
 ### C. PM review: carry the conditions into the next task
 
 1. Close the assignment with ×.
-2. Open Team → switch **Demo role** to **A. Chan · PM**.
-3. Open Silk River → **Review screening submission**.
+2. Switch the workspace selector to **A. Chan · PM**.
+3. Open Silk River → **Review submission**.
 4. Scroll to **Human decision** and enter:
 
    > Proceed to diligence. Independently confirm the liquidity terms before bringing this to IC.
@@ -159,7 +171,7 @@ request as sent; the demo does not send an email.
 
 ### D. Fund record: show where the work stays
 
-**Click:** close the assignment → Silk River → **Research & work**.
+**Click:** close the assignment → Silk River → **Research & diligence**.
 
 **Show:** the completed screening assignment and its follow-up. Open the screening assignment
 and expand **Submission & decision history** if time permits.
@@ -180,17 +192,17 @@ checks and approves the record.”
 The calculation is **$17.1M × (0.12% − 0.15%) = −$5,130**: a simple comparison of rates on the
 same base and period. It is separate from the July restatement, not a full fee-accrual engine.
 
-**Click:** **Approve** → Team. Find **Review the NAV-pack extraction** under **Done**.
+**Click:** **Approve** → Today · Team work. Find **Review the NAV-pack extraction** under **Done**.
 
 **Check:** approving the document completed its linked assignment.
 
-### F. Deterministic Book: check, decide, hand off
+### F. Deterministic Portfolio: check, decide, hand off
 
-1. Open **Book**. Point out that Sable’s old NAV triggers Rule E at the starting allocation.
+1. Open **Portfolio**. Point out that Sable’s old NAV triggers Rule E at the starting allocation.
 2. Change Sable’s dollar amount to **7125000** and click outside the field to apply the edit.
 3. Show **5%** Sable, **17%** proposed cash, and Rules **A–E passing**.
-4. Click **Approve — IC** as PM.
-5. Open Team and show **Review capital instructions · ticket #1** assigned to Operations.
+4. Click **Approve allocation** as PM.
+5. Open Today · Team work and show **Review capital instructions · ticket #1** assigned to Operations.
 
 **Say:** “The arithmetic and checks are fixed software. The PM approves the proposal, then
 Operations receives the next task. Approving a target allocation does not mean a trade settled.”
@@ -200,8 +212,8 @@ field. Rule A also fails and approval is disabled. Click **Discard**, then conti
 
 ### G. Close with the platform idea
 
-Hover over **Audit**, then open it: “Here is the recent history—person, agent and software.”
-Open **Modules** briefly: “We can add more tools around this shared foundation.”
+Hover over **All activity**, then open it: “Here is the recent history—person, agent and software.”
+Open **Presenter tools → How this demo works** briefly: “We can add more tools around this shared foundation.”
 
 Closing line:
 
@@ -242,15 +254,16 @@ After a refresh, copy the new session exports again.
 | Wrong starting state | Refresh and sign in again. This clears the rehearsal’s changes. |
 | Cannot find a sidebar action | Close the assignment or sheet using its top-right ×. |
 | Screening already submitted | Continue with PM review, or refresh to restart. |
-| Review buttons disabled | Close assignment → Team → Demo role **A. Chan · PM**. |
+| Review buttons disabled | Close assignment → workspace selector **A. Chan · PM**. |
 | Acceptance does nothing useful | Enter a review note first; read any displayed message. |
-| Book approval blocked | Discard earlier proposals. Set Sable to **7125000**, leave the field, and read the rule results. |
+| Allocation approval blocked | Discard earlier proposals. Set Sable to **7125000**, leave the field, and read the rule results. |
 | CLI cannot find the browser | Keep it signed in; use its current session exports. |
+| Interactive demo tour running | Press **Exit tour** on the coach panel, or Esc — both leave the tour and keep your work. |
 | Losing time | Finish after the Silk River handoff. Summarize the three modes verbally. |
 
-**Three-minute version:** stay signed in as PM. Team → Silk River → load research → edit →
+**Three-minute version:** stay signed in as PM. Team work → Silk River → load research → edit →
 submit → accept with a note → next assignment. The submission will correctly name A. Chan.
-Close with the three mode cards. Skip role switching, document review and Book.
+Close with the three mode cards. Skip role switching, document review and the Portfolio step.
 
 ## 7. Last checks before presenting
 
@@ -258,16 +271,16 @@ Close with the three mode cards. Skip role switching, document review and Book.
 - [ ] I can explain the three execution modes in one sentence each.
 - [ ] I have checked the browser zoom and projector readability.
 - [ ] The server is running and I have tested the URL on the presentation device.
-- [ ] I have refreshed into a clean starting state and opened Team.
+- [ ] I have refreshed into a clean starting state and opened Today · Team work.
 - [ ] I have this file open beside the demo, or have printed the short route below.
 - [ ] If using the CLI, I have copied the current browser session exports after the final reset.
 - [ ] I have saved screenshots or a short recording of my successful run as a fallback.
 
 **Pocket route:**
 
-> Team → Analyst → Silk River → research → edit → submit → PM → review note → accept →
-> next task → fund record → Halcyon document → approve → Book → Sable 7,125,000 → approve →
-> Operations task → Audit → Modules.
+> Team work → Analyst → Silk River → research → edit → submit → PM → review note → accept →
+> next task → fund record → Halcyon document → approve → Portfolio → Sable 7,125,000 → approve →
+> Operations task → All activity → How this demo works.
 
 ## 8. My practice notes
 
